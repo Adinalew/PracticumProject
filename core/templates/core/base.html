@@ -2,17 +2,50 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>{% block title %}StudyHub{% endblock %}</title>
+  <title>{% block title %}Study Hub{% endblock %}</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      margin: 0;
+      padding: 0;
+      background-color: #f9f9f9;
+    }
+    header {
+      background-color: #2c3e50;
+      color: white;
+      padding: 20px;
+      text-align: center;
+    }
+    nav {
+      background-color: #34495e;
+      text-align: center;
+      padding: 10px;
+    }
+    nav a {
+      color: white;
+      text-decoration: none;
+      margin: 0 15px;
+      font-weight: bold;
+    }
+    .content {
+      padding: 40px;
+      text-align: center;
+    }
+  </style>
 </head>
 <body>
 <header>
   <h1>Welcome to StudyHub</h1>
-  <nav>
-    <a href="/">Home</a>
-    <a href="/dashboard/">Dashboard</a>
-    <a href="{% url 'logout' %}">Logout</a>
-  </nav>
+    <nav>
+      {% if user.is_authenticated %}
+      <a href="{% url 'dashboard' %}">Dashboard</a>
+      <a href="{% url 'logout' %}">Logout</a>
+      {% else %}
+      <a href="{% url 'home' %}">Home</a>
+      <a href="{% url 'login' %}">Login</a>
+      <a href="{% url 'register' %}">Register</a>
+      {% endif %}
+    </nav>
 </header>
 <main>
   {% block content %}{% endblock %}
