@@ -30,3 +30,4 @@ staticfiles/
 
 # Environment variables / secrets
 .env
+
