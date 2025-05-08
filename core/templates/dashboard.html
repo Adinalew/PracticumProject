@@ -5,6 +5,20 @@
   <title>$Title$</title>
 </head>
 <body>
-$END$
+{% extends 'core/base.html' %}
+{% block content %}
+<h2>Your Study Sessions</h2>
+{% if sessions %}
+<ul>
+  {% for session in sessions %}
+  <li>{{ session.title }} – {{ session.created_at|date:"M d, Y H:i" }}</li>
+  {% endfor %}
+</ul>
+{% else %}
+<p>No study sessions yet.</p>
+{% endif %}
+
+<a href="/start-session/">Start New Session</a>
+{% endblock %}
 </body>
 </html>
