@@ -1,0 +1,24 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Session Actions</title>
+</head>
+<body>
+{% extends 'core/base.html' %}
+{% block title %}Choose Action{% endblock %}
+{% block content %}
+
+<h2>What would you like to do with "{{ session.title }}"?</h2>
+
+<form method="post">
+    {% csrf_token %}
+    <button type="submit" name="action" value="quiz">Generate Quiz</button><br><br>
+    <button type="submit" name="action" value="flashcards">Create Flashcards</button><br><br>
+    <button type="submit" name="action" value="tts">Read with Text-to-Speech</button><br><br>
+    <button type="submit" name="action" value="review">Review Uploaded File</button>
+</form>
+
+{% endblock %}
+</body>
+</html>
