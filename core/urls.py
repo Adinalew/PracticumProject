@@ -2,6 +2,7 @@ from . import views
 from django.urls import path
 from django.contrib.auth import views as auth_views
 from .views import home_view
+from .views import upload_files
 
 urlpatterns = [
     path('', home_view, name='home'),
@@ -11,4 +12,5 @@ urlpatterns = [
     path('logout/', views.logout_view, name='logout'),
     path('start-session/', views.start_session_view, name='start_session'),
     path('session/<int:session_id>/actions/', views.session_action_view, name='session_actions'),
+    path('upload/', upload_files, name='upload_files'),
 ]
