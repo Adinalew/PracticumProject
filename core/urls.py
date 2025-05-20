@@ -18,5 +18,6 @@ urlpatterns = [
     path('session/<int:session_id>/quiz/', generate_quiz, name='generate_quiz'),
     path('session/<int:session_id>/tts/', text_to_speech, name='text_to_speech'),
     path('session/<int:session_id>/review/', review_notes, name='review_notes'),
+    path('session/<int:session_id>/tts/', views.text_to_speech, name='text_to_speech'),
 ]
 

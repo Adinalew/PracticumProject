@@ -6,6 +6,10 @@ from .forms import StudySessionForm
 from .forms import MultiFileUploadForm
 from .models import StudySession, UploadedFile
 from .utils import extract_text_from_image
+from django.http import HttpResponse
+from .models import StudySession
+from .utils import generate_tts_audio
+from django.shortcuts import get_object_or_404
 
 def home_view(request):
     return render(request, 'home.html')  # Render your homepage HTML
@@ -138,4 +142,19 @@ def review_notes(request, session_id):
     session = get_object_or_404(StudySession, id=session_id, user=request.user)
     files = session.uploaded_files.all()
     return render(request, 'core/review.html', {'session': session, 'files': files})
+
+@login_required
+def text_to_speech(request, session_id):
+    session = get_object_or_404(StudySession, id=session_id, user=request.user)
+    notes = session.extracted_notes.all()
+    text = " ".join(note.text for note in notes if note.text)
+
+    if not text:
+        return HttpResponse("No notes available to read aloud.")
+
+    audio = generate_tts_audio(text)
+    response = HttpResponse(audio, content_type='audio/mpeg')
+    response['Content-Disposition'] = 'inline; filename="session_audio.mp3"'
+    return response
+
 
