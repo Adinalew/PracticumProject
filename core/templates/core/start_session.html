@@ -5,18 +5,22 @@
     <title>StartSession</title>
 </head>
 <body>
+
 {% extends 'core/base.html' %}
-
-{% block title %}Start a Session{% endblock %}
-
+{% block title %}Start a Session
+{% endblock %}
 {% block content %}
-<h2>Start a New Study Session</h2>
+<h2>Start a Study Session</h2>
+
 <form method="post" enctype="multipart/form-data">
     {% csrf_token %}
+
     {{ session_form.as_p }}
     {{ file_form.as_p }}
-    <button type="submit">Create Session & Upload Files</button>
+
+    <button type="submit">Start Session</button>
 </form>
+
 {% endblock %}
 
 </body>

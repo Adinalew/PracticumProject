@@ -16,9 +16,15 @@
     <button type="submit" name="action" value="quiz">Generate Quiz</button><br><br>
     <button type="submit" name="action" value="flashcards">Create Flashcards</button><br><br>
     <button type="submit" name="action" value="tts">Read with Text-to-Speech</button><br><br>
-    <button type="submit" name="action" value="review">Review Uploaded File</button>
+    <button type="submit" name="action" value="review">Create Review</button>
 </form>
 
 {% endblock %}
+{% if notes %}
+<h3>Extracted Notes</h3>
+{% for note in notes %}
+<pre>{{ note.text }}</pre>
+{% endfor %}
+{% endif %}
 </body>
 </html>

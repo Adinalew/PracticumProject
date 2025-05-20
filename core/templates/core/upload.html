@@ -5,10 +5,11 @@
     <title>Upload Files</title>
 </head>
 <body>
-<form method="post" enctype="multipart/form-data">
+<form method="post" enctype="multipart/form-data" action="{% url 'upload_files' %}">
     {% csrf_token %}
-    {{ form.as_p }}
+    <input type="file" name="files" multiple>
     <button type="submit">Upload Files</button>
 </form>
 </body>
 </html>
+

@@ -5,6 +5,7 @@ from django.contrib.auth import logout
 from .forms import StudySessionForm
 from .forms import MultiFileUploadForm
 from .models import StudySession, UploadedFile
+from .utils import extract_text_from_image
 
 def home_view(request):
     return render(request, 'home.html')  # Render your homepage HTML
@@ -22,7 +23,6 @@ def register_view(request):
 @login_required
 def dashboard_view(request):
     sessions = StudySession.objects.filter(user=request.user).order_by('-created_at')
-    #sessions = StudySession.objects.filter(user=request.user).prefetch_related('uploaded_files')
     return render(request, 'core/dashboard.html', {'sessions': sessions})
 
 def logout_view(request):
@@ -35,28 +35,43 @@ def start_session_view(request):
         session_form = StudySessionForm(request.POST)
         file_form = MultiFileUploadForm(request.POST, request.FILES)
 
-        if session_form.is_valid() and file_form.is_valid():
-            # Create the study session
-            session = session_form.save(commit=False)
-            session.user = request.user
-            session.save()
+        if session_form.is_valid():
+            files = request.FILES.getlist('files')
+            if not files:
+                file_form.add_error('files', 'Please upload at least one file.')
+            else:
+                session = session_form.save(commit=False)
+                session.user = request.user
+                session.save()
 
-            # Save uploaded files
-            for f in request.FILES.getlist('files'):
-                UploadedFile.objects.create(
-                    user=request.user,
-                    session=session,
-                    file=f
-                )
+                for f in files:
+                    UploadedFile.objects.create(
+                        user=request.user,
+                        session=session,
+                        file=f
+                    )
 
-            return redirect('session_actions', session_id=session.id)
+                # Decide what kind of processing to do
+                    if f.name.lower().endswith(('.png', '.jpg', '.jpeg')):
+                        extracted = extract_text_from_image(f)
+                        ExtractedNote.objects.create(session=session, text=extracted)
+
+                    elif f.name.lower().endswith('.txt'):
+                        content = f.read().decode('utf-8')
+                        ExtractedNote.objects.create(session=session, text=content)
+
+                return redirect('session_actions', session_id=session.id)
+
+        # If we got here, either session_form or file_form has errors
+        print("Session Form Errors:", session_form.errors)
+        print("File Form Errors:", file_form.errors)
     else:
         session_form = StudySessionForm()
         file_form = MultiFileUploadForm()
 
     return render(request, 'core/start_session.html', {
         'session_form': session_form,
-        'file_form': file_form
+        'file_form': file_form,
     })
 
 @login_required
@@ -74,17 +89,53 @@ def session_action_view(request, session_id):
         elif action == 'review':
             return redirect('review_notes', session_id=session.id)
 
+    notes = session.extracted_notes.all()
+
+    return render(request, 'core/session_actions.html', {
+        'session': session,
+        'notes': notes,
+    })
     return render(request, 'core/session_actions.html', {'session': session})
 
+
+@login_required
 def upload_files(request):
+    print("UPLOAD VIEW TRIGGERED")
+
     if request.method == 'POST':
         form = MultiFileUploadForm(request.POST, request.FILES)
         if form.is_valid():
-            files = request.FILES.getlist('files')
-            for f in files:
-                # Save each file as a new UploadedFile instance or however your model works
-                UploadedFile.objects.create(file=f, user=request.user)
-            return redirect('some_success_page')
+            for f in request.FILES.getlist('files'):
+                UploadedFile.objects.create(file=f, user=request.user, session=None)  # Session is optional
+            return redirect('dashboard')
+        else:
+            print("FORM ERRORS:", form.errors)
     else:
         form = MultiFileUploadForm()
+
     return render(request, 'upload.html', {'form': form})
+
+@login_required
+def generate_flashcards(request, session_id):
+    session = get_object_or_404(StudySession, id=session_id, user=request.user)
+    # Placeholder logic
+    return render(request, 'core/flashcards.html', {'session': session})
+
+@login_required
+def generate_quiz(request, session_id):
+    session = get_object_or_404(StudySession, id=session_id, user=request.user)
+    # Placeholder logic
+    return render(request, 'core/quiz.html', {'session': session})
+
+@login_required
+def text_to_speech(request, session_id):
+    session = get_object_or_404(StudySession, id=session_id, user=request.user)
+    # Placeholder logic
+    return render(request, 'core/text_to_speech.html', {'session': session})
+
+@login_required
+def review_notes(request, session_id):
+    session = get_object_or_404(StudySession, id=session_id, user=request.user)
+    files = session.uploaded_files.all()
+    return render(request, 'core/review.html', {'session': session, 'files': files})
+
