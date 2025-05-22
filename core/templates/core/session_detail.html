@@ -22,6 +22,16 @@
     {% endfor %}
 </ul>
 
+{% if notes %}
+<h3>🔊 Listen to Your Notes</h3>
+<audio controls>
+    <source src="{% url 'text_to_speech' session.id %}" type="audio/mpeg">
+    Your browser does not support the audio element.
+</audio>
+{% endif %}
+
+<hr>
+
 <h3>🧠 Flashcards</h3>
 <ul>
     {% for card in flashcards %}
@@ -58,7 +68,7 @@
     <li><a href="{% url 'upload_files_to_session' session.id %}">📤 Upload More Notes</a></li>
     <li><a href="{% url 'generate_flashcards' session.id %}">🧠 Generate More Flashcards</a></li>
     <li><a href="{% url 'generate_quiz' session.id %}">🧪 Create a Quiz</a></li>
-    <li><a href="{% url 'text_to_speech' session.id %}">🔊 Read Notes Aloud</a></li>
+    <li><a href="{% url 'text_to_speech' session.id %}">🔊 Download Audio</a></li>
 </ul>
 
 <p>

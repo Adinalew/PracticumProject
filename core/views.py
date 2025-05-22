@@ -108,10 +108,13 @@ def upload_files(request):
         if form.is_valid():
             session = StudySession.objects.create(user=request.user)
             for f in request.FILES.getlist('files'):
-                # Extract text from the file (implement this function)
                 extracted_text = extract_text_from_file(f)
-                ExtractedNote.objects.create(session=session, text=extracted_text)
-            return redirect('dashboard')
+                print(f"OCR extracted text for file {f.name}:\n{extracted_text}")
+                if extracted_text.strip():
+                    ExtractedNote.objects.create(session=session, text=extracted_text)
+                else:
+                    print("No text extracted from file, skipping note creation.")
+        return redirect('dashboard')
     else:
         form = MultiFileUploadForm()
 
