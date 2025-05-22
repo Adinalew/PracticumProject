@@ -102,33 +102,56 @@ def session_action_view(request, session_id):
     })
 
 @login_required
-def upload_files(request):
+def upload_files_to_session(request, session_id):
+    print(f"Starting file upload for session ID: {session_id}")
+    session = get_object_or_404(StudySession, id=session_id, user=request.user)
+    print(f"Session retrieved: {session}")
+
     if request.method == 'POST':
         form = MultiFileUploadForm(request.POST, request.FILES)
         if form.is_valid():
-            session = StudySession.objects.create(user=request.user)
+            print("Form is valid. Processing uploaded files...")
             for f in request.FILES.getlist('files'):
+                print(f"Processing file: {f.name}")
                 extracted_text = extract_text_from_file(f)
                 print(f"OCR extracted text for file {f.name}:\n{extracted_text}")
                 if extracted_text.strip():
                     ExtractedNote.objects.create(session=session, text=extracted_text)
+                    print(f"Extracted note created for file: {f.name}")
                 else:
-                    print("No text extracted from file, skipping note creation.")
-        return redirect('dashboard')
+                    print(f"No text extracted from file {f.name}, skipping note creation.")
+            print("All files processed successfully.")
+        else:
+            print("Form is invalid. Errors:", form.errors)
+        return redirect('session_detail', session_id=session.id)
     else:
         form = MultiFileUploadForm()
+        print("Rendering upload form.")
 
-    return render(request, 'upload.html', {'form': form})
-
+    return render(request, 'core/upload.html', {'form': form, 'session': session})
 @login_required
 def session_detail(request, session_id):
+    print(f"Fetching session with ID: {session_id}")
     session = get_object_or_404(StudySession, id=session_id, user=request.user)
+    print(f"Session retrieved: {session}")
 
+    print("Fetching extracted notes...")
     notes = session.extracted_notes.all()
-    flashcards = session.flashcards.all()
-    quizzes = session.quizzes.all()
-    summaries = session.summaries.all()
+    print(f"Notes retrieved: {notes}")
 
+    print("Fetching flashcards...")
+    flashcards = session.flashcards.all()
+    print(f"Flashcards retrieved: {flashcards}")
+
+    print("Fetching quizzes...")
+    quizzes = session.quizzes.all()
+    print(f"Quizzes retrieved: {quizzes}")
+
+    print("Fetching summaries...")
+    summaries = session.summaries.all()
+    print(f"Summaries retrieved: {summaries}")
+
+    print("Rendering session_detail template...")
     return render(request, 'core/session_detail.html', {
         'session': session,
         'notes': notes,
@@ -137,21 +160,8 @@ def session_detail(request, session_id):
         'summaries': summaries,
     })
 
-@login_required
-def upload_files_to_session(request, session_id):
-    session = get_object_or_404(StudySession, id=session_id, user=request.user)
-    if request.method == 'POST':
-        form = MultiFileUploadForm(request.POST, request.FILES)
-        if form.is_valid():
-            for f in request.FILES.getlist('files'):
-                UploadedFile.objects.create(user=request.user, session=session, file=f)
-            messages.success(request, "Files uploaded successfully.")
-            return redirect('session_detail', session_id=session.id)
-    else:
-        form = MultiFileUploadForm()
 
-    # Ensure this is pointing to 'core/upload.html'
-    return render(request, 'core/upload.html', {'form': form, 'session': session})
+
 @login_required
 def delete_session(request, session_id):
     session = get_object_or_404(StudySession, id=session_id, user=request.user)
