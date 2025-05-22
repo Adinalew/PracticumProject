@@ -1,0 +1,25 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Session List</title>
+</head>
+<body>
+{% extends 'core/base.html' %}
+{% block content %}
+<h2>{{ session.title }}</h2>
+<p><strong>Created:</strong> {{ session.created_at|date:"M d, Y H:i" }}</p>
+
+<h3>Extracted Notes:</h3>
+<ul>
+    {% for note in notes %}
+    <li>{{ note.text|linebreaks }}</li>
+    {% empty %}
+    <li>No notes for this session.</li>
+    {% endfor %}
+</ul>
+
+<a href="{% url 'dashboard' %}">⬅ Back to all sessions</a>
+{% endblock %}
+</body>
+</html>

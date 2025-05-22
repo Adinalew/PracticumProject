@@ -4,12 +4,13 @@ from django.contrib.auth.decorators import login_required
 from django.contrib.auth import logout
 from .forms import StudySessionForm
 from .forms import MultiFileUploadForm
-from .models import StudySession, UploadedFile
 from .utils import extract_text_from_image
 from django.http import HttpResponse
-from .models import StudySession
 from .utils import generate_tts_audio
-from django.shortcuts import get_object_or_404
+from .models import StudySession, UploadedFile, ExtractedNote
+from django.contrib import messages
+from .utils import extract_text_from_image, extract_text_from_file
+from core.models import ExtractedNote
 
 def home_view(request):
     return render(request, 'home.html')  # Render your homepage HTML
@@ -55,7 +56,7 @@ def start_session_view(request):
                         file=f
                     )
 
-                # Decide what kind of processing to do
+                    # Decide what kind of processing to do
                     if f.name.lower().endswith(('.png', '.jpg', '.jpeg')):
                         extracted = extract_text_from_image(f)
                         ExtractedNote.objects.create(session=session, text=extracted)
@@ -99,25 +100,46 @@ def session_action_view(request, session_id):
         'session': session,
         'notes': notes,
     })
-    return render(request, 'core/session_actions.html', {'session': session})
-
 
 @login_required
 def upload_files(request):
-    print("UPLOAD VIEW TRIGGERED")
-
     if request.method == 'POST':
         form = MultiFileUploadForm(request.POST, request.FILES)
         if form.is_valid():
+            session = StudySession.objects.create(user=request.user)
             for f in request.FILES.getlist('files'):
-                UploadedFile.objects.create(file=f, user=request.user, session=None)  # Session is optional
+                # Extract text from the file (implement this function)
+                extracted_text = extract_text_from_file(f)
+                ExtractedNote.objects.create(session=session, text=extracted_text)
             return redirect('dashboard')
-        else:
-            print("FORM ERRORS:", form.errors)
     else:
         form = MultiFileUploadForm()
 
     return render(request, 'upload.html', {'form': form})
+
+@login_required
+def session_detail(request, session_id):
+    session = get_object_or_404(StudySession, id=session_id, user=request.user)
+
+    notes = session.extracted_notes.all()
+    flashcards = session.flashcards.all()
+    quizzes = session.quizzes.all()
+    summaries = session.summaries.all()
+
+    return render(request, 'core/session_detail.html', {
+        'session': session,
+        'notes': notes,
+        'flashcards': flashcards,
+        'quizzes': quizzes,
+        'summaries': summaries,
+    })
+
+@login_required
+def delete_session(request, session_id):
+    session = get_object_or_404(StudySession, id=session_id, user=request.user)
+    session.delete()
+    messages.success(request, "Session deleted successfully.")
+    return redirect('dashboard')  # or wherever your list lives
 
 @login_required
 def generate_flashcards(request, session_id):
@@ -134,27 +156,21 @@ def generate_quiz(request, session_id):
 @login_required
 def text_to_speech(request, session_id):
     session = get_object_or_404(StudySession, id=session_id, user=request.user)
-    # Placeholder logic
-    return render(request, 'core/text_to_speech.html', {'session': session})
-
-@login_required
-def review_notes(request, session_id):
-    session = get_object_or_404(StudySession, id=session_id, user=request.user)
-    files = session.uploaded_files.all()
-    return render(request, 'core/review.html', {'session': session, 'files': files})
-
-@login_required
-def text_to_speech(request, session_id):
-    session = get_object_or_404(StudySession, id=session_id, user=request.user)
     notes = session.extracted_notes.all()
     text = " ".join(note.text for note in notes if note.text)
 
-    if not text:
+    if not text.strip():
         return HttpResponse("No notes available to read aloud.")
 
     audio = generate_tts_audio(text)
     response = HttpResponse(audio, content_type='audio/mpeg')
     response['Content-Disposition'] = 'inline; filename="session_audio.mp3"'
     return response
+
+@login_required
+def review_notes(request, session_id):
+    session = get_object_or_404(StudySession, id=session_id, user=request.user)
+    files = session.uploaded_files.all()
+    return render(request, 'core/review.html', {'session': session, 'files': files})
 
 

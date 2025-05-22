@@ -4,6 +4,8 @@ from django.contrib.auth import views as auth_views
 from .views import home_view
 from .views import upload_files
 from .views import generate_flashcards, generate_quiz, text_to_speech, review_notes
+from django.conf import settings
+from django.conf.urls.static import static
 
 urlpatterns = [
     path('', home_view, name='home'),
@@ -19,5 +21,9 @@ urlpatterns = [
     path('session/<int:session_id>/tts/', text_to_speech, name='text_to_speech'),
     path('session/<int:session_id>/review/', review_notes, name='review_notes'),
     path('session/<int:session_id>/tts/', views.text_to_speech, name='text_to_speech'),
+    path('sessions/<int:session_id>/', views.session_detail, name='session_detail'),
+    path('sessions/<int:session_id>/delete/', views.delete_session, name='delete_session'),
 ]
 
+if settings.DEBUG:
+    urlpatterns += static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)

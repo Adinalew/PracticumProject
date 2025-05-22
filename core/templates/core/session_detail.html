@@ -1,0 +1,70 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Session Detail</title>
+</head>
+<body>
+{% extends 'core/base.html' %}
+{% block content %}
+
+<h2>{{ session.title }}</h2>
+<p><strong>Created:</strong> {{ session.created_at|date:"M d, Y H:i" }}</p>
+
+<hr>
+
+<h3>🔍 Notes Extracted</h3>
+<ul>
+    {% for note in notes %}
+    <li>{{ note.text|linebreaks }}</li>
+    {% empty %}
+    <li>No notes yet.</li>
+    {% endfor %}
+</ul>
+
+<h3>🧠 Flashcards</h3>
+<ul>
+    {% for card in flashcards %}
+    <li><strong>Q:</strong> {{ card.question }}<br><strong>A:</strong> {{ card.answer }}</li>
+    {% empty %}
+    <li>No flashcards yet.</li>
+    {% endfor %}
+</ul>
+
+<h3>📋 Quizzes</h3>
+<ul>
+    {% for quiz in quizzes %}
+    <li>
+        <strong>{{ quiz.title }}</strong>
+        <ul>
+            {% for q in quiz.quizquestion_set.all %}
+            <li>
+                <strong>Q:</strong> {{ q.question }}<br>
+                <strong>Choices:</strong> {{ q.choices }}<br>
+                <strong>Answer:</strong> {{ q.correct_answer }}
+            </li>
+            {% endfor %}
+        </ul>
+    </li>
+    {% empty %}
+    <li>No quizzes yet.</li>
+    {% endfor %}
+</ul>
+
+<hr>
+
+<h3>➕ What would you like to do next?</h3>
+<ul>
+    <li><a href="{% url 'upload_files_to_session' session.id %}">📤 Upload More Notes</a></li>
+    <li><a href="{% url 'generate_flashcards' session.id %}">🧠 Generate More Flashcards</a></li>
+    <li><a href="{% url 'generate_quiz' session.id %}">🧪 Create a Quiz</a></li>
+    <li><a href="{% url 'text_to_speech' session.id %}">🔊 Read Notes Aloud</a></li>
+</ul>
+
+<p>
+    <a href="{% url 'dashboard' %}">⬅ Back to Dashboard</a>
+</p>
+
+{% endblock %}
+</body>
+</html>
