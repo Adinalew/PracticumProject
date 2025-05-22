@@ -135,6 +135,21 @@ def session_detail(request, session_id):
     })
 
 @login_required
+def upload_files_to_session(request, session_id):
+    session = get_object_or_404(StudySession, id=session_id, user=request.user)
+    if request.method == 'POST':
+        form = MultiFileUploadForm(request.POST, request.FILES)
+        if form.is_valid():
+            for f in request.FILES.getlist('files'):
+                UploadedFile.objects.create(user=request.user, session=session, file=f)
+            messages.success(request, "Files uploaded successfully.")
+            return redirect('session_detail', session_id=session.id)
+    else:
+        form = MultiFileUploadForm()
+
+    # Ensure this is pointing to 'core/upload.html'
+    return render(request, 'core/upload.html', {'form': form, 'session': session})
+@login_required
 def delete_session(request, session_id):
     session = get_object_or_404(StudySession, id=session_id, user=request.user)
     session.delete()

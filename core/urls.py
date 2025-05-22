@@ -23,6 +23,7 @@ urlpatterns = [
     path('session/<int:session_id>/tts/', views.text_to_speech, name='text_to_speech'),
     path('sessions/<int:session_id>/', views.session_detail, name='session_detail'),
     path('sessions/<int:session_id>/delete/', views.delete_session, name='delete_session'),
+    path('session/<int:session_id>/upload/', views.upload_files_to_session, name='upload_files_to_session'),
 ]
 
 if settings.DEBUG:
