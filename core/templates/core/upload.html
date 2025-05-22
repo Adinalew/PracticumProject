@@ -1,12 +1,6 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <title>Upload Files for {{ session.title }}</title>
-</head>
-<body>
 {% extends 'core/base.html' %}
 {% block content %}
+
 <h1>Upload Files for "{{ session.title }}"</h1>
 <form method="post" enctype="multipart/form-data">
     {% csrf_token %}
@@ -19,14 +13,7 @@
 <ul>
     {% for file in session.uploaded_files.all %}
     <li>
-        {% if file.file.url|lower endswith ".jpg" or
-        file.file.url|lower endswith ".jpeg" or
-        file.file.url|lower endswith ".png" or
-        file.file.url|lower endswith ".gif" %}
-        <img src="{{ file.file.url }}" alt="Uploaded Image" style="max-width: 200px;">
-        {% else %}
         <a href="{{ file.file.url }}" target="_blank">{{ file.file.name }}</a>
-        {% endif %}
     </li>
     {% empty %}
     <p>No files uploaded yet for this session.</p>
@@ -37,6 +24,5 @@
 {% endif %}
 
 <p><a href="{% url 'session_detail' session.id %}">⬅ Back to Session</a></p>
+
 {% endblock %}
-</body>
-</html>
