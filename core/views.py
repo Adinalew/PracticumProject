@@ -4,13 +4,12 @@ from django.contrib.auth.decorators import login_required
 from django.contrib.auth import logout
 from .forms import StudySessionForm
 from .forms import MultiFileUploadForm
-from .utils import extract_text_from_image
 from django.http import HttpResponse
 from .utils import generate_tts_audio
 from .models import StudySession, UploadedFile, ExtractedNote
 from django.contrib import messages
+import os
 from .utils import extract_text_from_image, extract_text_from_file
-from core.models import ExtractedNote
 
 def home_view(request):
     return render(request, 'home.html')  # Render your homepage HTML
@@ -101,6 +100,18 @@ def session_action_view(request, session_id):
         'notes': notes,
     })
 
+def extract_text_from_uploaded_file(uploaded_file):
+    file_path = uploaded_file.file.path
+    ext = os.path.splitext(file_path)[1].lower()
+
+    if ext in ['.png', '.jpg', '.jpeg']:
+        return extract_text_from_image(file_path)
+    elif ext == '.txt':
+        return extract_text_from_file(file_path)
+    else:
+        print(f"No extractor for file type: {ext}")
+        return ""
+
 @login_required
 def upload_files_to_session(request, session_id):
     print(f"Starting file upload for session ID: {session_id}")
@@ -113,13 +124,24 @@ def upload_files_to_session(request, session_id):
             print("Form is valid. Processing uploaded files...")
             for f in request.FILES.getlist('files'):
                 print(f"Processing file: {f.name}")
-                extracted_text = extract_text_from_file(f)
+
+                # Create UploadedFile instance and save it
+                uploaded_file = UploadedFile.objects.create(
+                    user=request.user,
+                    session=session,
+                    file=f
+                )
+
+                # Extract text from saved uploaded file
+                extracted_text = extract_text_from_uploaded_file(uploaded_file)
                 print(f"OCR extracted text for file {f.name}:\n{extracted_text}")
+
                 if extracted_text.strip():
                     ExtractedNote.objects.create(session=session, text=extracted_text)
                     print(f"Extracted note created for file: {f.name}")
                 else:
                     print(f"No text extracted from file {f.name}, skipping note creation.")
+
             print("All files processed successfully.")
         else:
             print("Form is invalid. Errors:", form.errors)
@@ -129,6 +151,7 @@ def upload_files_to_session(request, session_id):
         print("Rendering upload form.")
 
     return render(request, 'core/upload.html', {'form': form, 'session': session})
+
 @login_required
 def session_detail(request, session_id):
     print(f"Fetching session with ID: {session_id}")
@@ -159,8 +182,6 @@ def session_detail(request, session_id):
         'quizzes': quizzes,
         'summaries': summaries,
     })
-
-
 
 @login_required
 def delete_session(request, session_id):
