@@ -5,7 +5,7 @@ from django.contrib.auth import logout
 from .forms import StudySessionForm
 from .forms import MultiFileUploadForm
 from django.http import HttpResponse
-from .utils import generate_tts_audio
+from .utils import generate_tts_audio, extract_text_from_pdf, extract_text_from_uploaded_file
 from .models import StudySession, UploadedFile, ExtractedNote
 from django.contrib import messages
 import os
@@ -99,18 +99,6 @@ def session_action_view(request, session_id):
         'session': session,
         'notes': notes,
     })
-
-def extract_text_from_uploaded_file(uploaded_file):
-    file_path = uploaded_file.file.path
-    ext = os.path.splitext(file_path)[1].lower()
-
-    if ext in ['.png', '.jpg', '.jpeg']:
-        return extract_text_from_image(file_path)
-    elif ext == '.txt':
-        return extract_text_from_file(file_path)
-    else:
-        print(f"No extractor for file type: {ext}")
-        return ""
 
 @login_required
 def upload_files_to_session(request, session_id):

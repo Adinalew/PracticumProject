@@ -1,18 +1,10 @@
-import PyPDF2
-import pytesseract
-from PIL import Image
-from django.core.files.storage import default_storage
-import io
-import pyttsx3
-from docx import Document
 from gtts import gTTS
 from io import BytesIO
-import pytesseract
-pytesseract.pytesseract.tesseract_cmd = r'C:\Program Files\Tesseract-OCR\tesseract.exe'
 import pytesseract
 from PIL import Image, ImageEnhance, ImageFilter
 import io
 import os
+from pdf2image import convert_from_bytes
 
 # Set this path if pytesseract can't find tesseract automatically
 pytesseract.pytesseract.tesseract_cmd = r'C:\Program Files\Tesseract-OCR\tesseract.exe'
@@ -34,6 +26,20 @@ def extract_text_from_image(image_file):
     text = pytesseract.image_to_string(image)
     return text.strip()
 
+def extract_text_from_pdf(file):
+    file.seek(0)
+    print(f"extract_text_from_pdf called with file: {file.name}")
+    images = convert_from_bytes(file.read())
+    full_text = ""
+    for image in images:
+        buf = io.BytesIO()
+        image.save(buf, format='PNG')
+        buf.seek(0)
+        page_text = extract_text_from_image(buf)
+        print(f"Extracted text from one PDF page: {page_text[:100]}")  # preview
+        full_text += page_text + "\n"
+    return full_text.strip()
+
 def extract_text_from_file(file):
     ext = os.path.splitext(file.name)[1].lower()
     if ext in ['.png', '.jpg', '.jpeg', '.bmp', '.tiff']:
@@ -43,17 +49,40 @@ def extract_text_from_file(file):
     else:
         return ""
 
-from pdf2image import convert_from_bytes
+def extract_text_from_uploaded_file(uploaded_file):
+    file_field = uploaded_file.file
+    ext = os.path.splitext(file_field.name)[1].lower()
+    print(f"extract_text_from_uploaded_file called for {file_field.name} with extension {ext}")
 
-def extract_text_from_pdf(file):
-    images = convert_from_bytes(file.read())
-    full_text = ""
-    for image in images:
-        buf = io.BytesIO()
-        image.save(buf, format='PNG')
-        buf.seek(0)
-        full_text += extract_text_from_image(buf) + "\n"
-    return full_text.strip()
+    try:
+        if ext in ['.png', '.jpg', '.jpeg', '.bmp', '.tiff']:
+            return extract_text_from_image(file_field)
+
+        elif ext == '.txt':
+            print("Trying to read .txt file...")
+            file_field.open()
+            file_field.seek(0)  # Rewind
+            content_bytes = file_field.read()
+            print(f"Raw content bytes: {content_bytes[:50]}")
+            try:
+                content = content_bytes.decode('utf-8')
+            except UnicodeDecodeError:
+                print("UTF-8 decode failed, trying latin-1...")
+                content = content_bytes.decode('latin-1')
+
+            print(f"Extracted text from txt file (preview): {content[:100]}")
+            return content.strip()
+
+        elif ext == '.pdf':
+            return extract_text_from_pdf(file_field)
+
+        else:
+            print(f"No extractor for file type: {ext}")
+            return ""
+
+    except Exception as e:
+        print(f"Error extracting text from {file_field.name}: {e}")
+        return ""
 
 def generate_tts_audio(text):
     tts = gTTS(text)

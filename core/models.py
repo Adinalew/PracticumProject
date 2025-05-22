@@ -42,7 +42,7 @@ class ExtractedNote(models.Model):
     created_at = models.DateTimeField(auto_now_add=True)
 
     def __str__(self):
-        return self.text[:50]
+        return self.text[:50] or "<empty>"
 
 class TextToSpeechAudio(models.Model):
     session = models.OneToOneField(StudySession, on_delete=models.CASCADE, related_name='tts_audio')

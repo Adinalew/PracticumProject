@@ -2,7 +2,7 @@
 {% block content %}
 
 <h1>Upload Files for "{{ session.title }}"</h1>
-<form method="post" enctype="multipart/form-data">
+<form method="POST" enctype="multipart/form-data" action="{% url 'upload_files_to_session' session.id %}">
     {% csrf_token %}
     {{ form.as_p }}
     <button type="submit">Upload Files</button>
