@@ -3,6 +3,11 @@
 <head>
     <meta charset="UTF-8">
     <title>Session Detail</title>
+    <style>
+        ul { list-style-type: none; padding: 0; }
+        li { margin-bottom: 10px; }
+        .actions { margin-top: 20px; }
+    </style>
 </head>
 <body>
 {% extends 'core/base.html' %}
@@ -44,18 +49,7 @@
 <h3>📋 Quizzes</h3>
 <ul>
     {% for quiz in quizzes %}
-    <li>
-        <strong>{{ quiz.title }}</strong>
-        <ul>
-            {% for q in quiz.quizquestion_set.all %}
-            <li>
-                <strong>Q:</strong> {{ q.question }}<br>
-                <strong>Choices:</strong> {{ q.choices }}<br>
-                <strong>Answer:</strong> {{ q.correct_answer }}
-            </li>
-            {% endfor %}
-        </ul>
-    </li>
+    <li><strong>{{ quiz.title }}</strong></li>
     {% empty %}
     <li>No quizzes yet.</li>
     {% endfor %}
@@ -63,13 +57,15 @@
 
 <hr>
 
-<h3>➕ What would you like to do next?</h3>
-<ul>
-    <li><a href="{% url 'upload_files_to_session' session.id %}">📤 Upload More Notes</a></li>
-    <li><a href="{% url 'generate_flashcards' session.id %}">🧠 Generate More Flashcards</a></li>
-    <li><a href="{% url 'generate_quiz' session.id %}">🧪 Create a Quiz</a></li>
-    <li><a href="{% url 'text_to_speech' session.id %}">🔊 Download Audio</a></li>
-</ul>
+<div class="actions">
+    <h3>➕ What would you like to do next?</h3>
+    <ul>
+        <li><a href="{% url 'upload_files_to_session' session.id %}">📤 Upload More Notes</a></li>
+        <li><a href="{% url 'generate_flashcards' session.id %}">🧠 Generate More Flashcards</a></li>
+        <li><a href="{% url 'generate_quiz' session.id %}">🧪 Create a Quiz</a></li>
+        <li><a href="{% url 'text_to_speech' session.id %}">🔊 Read Notes Aloud</a></li>
+    </ul>
+</div>
 
 <p>
     <a href="{% url 'dashboard' %}">⬅ Back to Dashboard</a>

@@ -2,7 +2,12 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <title>$Title$</title>
+  <title>Your Study Sessions</title>
+  <style>
+    ul { list-style-type: none; padding: 0; }
+    li { margin-bottom: 10px; }
+    .session-actions { margin-left: 10px; }
+  </style>
 </head>
 <body>
 {% extends 'core/base.html' %}
@@ -12,13 +17,11 @@
 <ul>
   {% for session in sessions %}
   <li>
-    <a href="{% url 'session_detail' session.id %}">
-      {{ session.title }}
-    </a> – {{ session.created_at|date:"M d, Y H:i" }}
-    |
-    <a href="{% url 'delete_session' session.id %}" onclick="return confirm('⚠️ Are you sure you want to delete this session? This action cannot be undone.')">
-      🗑 Delete
-    </a>
+    <strong>{{ session.title }}</strong> – {{ session.created_at|date:"M d, Y H:i" }}
+    <span class="session-actions">
+      <a href="{% url 'session_detail' session.id %}">View Details</a> |
+      <a href="{% url 'delete_session' session.id %}" onclick="return confirm('⚠️ Are you sure you want to delete this session? This action cannot be undone.')">🗑 Delete</a>
+    </span>
   </li>
   {% endfor %}
 </ul>
@@ -26,7 +29,7 @@
 <p>No study sessions yet.</p>
 {% endif %}
 
-<a href="/start-session/">Start New Session</a>
+<a href="{% url 'start_session' %}" class="button">Start New Session</a>
 {% endblock %}
 </body>
 </html>
