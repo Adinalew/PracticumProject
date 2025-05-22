@@ -44,6 +44,14 @@ class ExtractedNote(models.Model):
     def __str__(self):
         return self.text[:50]
 
+class TextToSpeechAudio(models.Model):
+    session = models.OneToOneField(StudySession, on_delete=models.CASCADE, related_name='tts_audio')
+    audio_file = models.FileField(upload_to='tts_audio/')
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    def __str__(self):
+        return self.audio_file[:50]
+
 class Summary(models.Model):
     session = models.ForeignKey(StudySession, on_delete=models.CASCADE, related_name='summaries')
     content = models.TextField()

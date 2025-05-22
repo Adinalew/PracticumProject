@@ -27,6 +27,16 @@
     {% endfor %}
 </ul>
 
+{% if notes %}
+<h3>🔊 Listen to Your Notes</h3>
+<audio controls>
+    <source src="{% url 'text_to_speech' session.id %}" type="audio/mpeg">
+    Your browser does not support the audio element.
+</audio>
+{% endif %}
+
+<hr>
+
 <h3>🧠 Flashcards</h3>
 <ul>
     {% for card in flashcards %}
@@ -44,6 +54,8 @@
     <li>No quizzes yet.</li>
     {% endfor %}
 </ul>
+
+<hr>
 
 <div class="actions">
     <h3>➕ What would you like to do next?</h3>
