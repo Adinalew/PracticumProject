@@ -4,53 +4,47 @@ import pytesseract
 from PIL import Image, ImageEnhance, ImageFilter
 import io
 import os
-from pdf2image import convert_from_bytes
 import openai
+from openai import OpenAIError, OpenAI
 from django.conf import settings
 from docx import Document
 from pptx import Presentation
 import fitz  # PyMuPDF
 
-# Set this path if pytesseract can't find tesseract automatically
 pytesseract.pytesseract.tesseract_cmd = r'C:\Program Files\Tesseract-OCR\tesseract.exe'
 
 def preprocess_image(image_file):
     image = Image.open(image_file)
-    image = image.convert('L')  # Convert to grayscale
+    image = image.convert('L')
     enhancer = ImageEnhance.Contrast(image)
-    image = enhancer.enhance(2)  # Enhance contrast
-    image = image.filter(ImageFilter.SHARPEN)  # Optional: sharpen
+    image = enhancer.enhance(2)
+    image = image.filter(ImageFilter.SHARPEN)
     return image
 
 def extract_text_from_image(image_file):
     image = preprocess_image(image_file)
-    text = pytesseract.image_to_string(image)
-    return text.strip()
+    return pytesseract.image_to_string(image).strip()
 
 def extract_text_from_pdf(file):
     file.seek(0)
-    print(f"extract_text_from_pdf called with file: {file.name}")
-    images = convert_from_bytes(file.read())
-    full_text = ""
-    for image in images:
-        buf = io.BytesIO()
-        image.save(buf, format='PNG')
-        buf.seek(0)
-        page_text = extract_text_from_image(buf)
-        print(f"Extracted text from one PDF page: {page_text[:100]}")  # preview
-        full_text += page_text + "\n"
-    return full_text.strip()
+    try:
+        doc = fitz.open(stream=file.read(), filetype="pdf")
+        text = ""
+        for page in doc:
+            page_text = page.get_text()
+            text += page_text + "\n"
+        return text.strip()
+    except Exception as e:
+        print(f"Error extracting PDF text: {e}")
+        return ""
 
 def extract_text_from_docx(file):
     file.seek(0)
-    print(f"extract_text_from_docx called with file: {file.name}")
     doc = Document(file)
-    full_text = [paragraph.text for paragraph in doc.paragraphs]
-    return "\n".join(full_text).strip()
+    return "\n".join(paragraph.text for paragraph in doc.paragraphs).strip()
 
 def extract_text_from_pptx(file):
     file.seek(0)
-    print(f"extract_text_from_pptx called with file: {file.name}")
     presentation = Presentation(file)
     full_text = []
     for slide in presentation.slides:
@@ -116,11 +110,12 @@ def generate_tts_audio(text):
 
 def get_text_from_session(session):
     notes = session.extracted_notes.all()
-    combined_text = "\n\n".join(note.text for note in notes if note.text.strip())
-    return combined_text
+    return "\n\n".join(note.text for note in notes if note.text.strip())
+
 
 def generate_study_review(text):
-    openai.api_key = settings.OPENAI_API_KEY
+    client = OpenAI(api_key=settings.OPENAI_API_KEY)
+
     prompt = (
         "You are an AI assistant tasked with creating a detailed study review. "
         "Based on the following input text, generate a review that highlights key points, "
@@ -128,30 +123,21 @@ def generate_study_review(text):
         f"{text}\n\n"
         "Please provide a structured and concise review."
     )
+
+    print("📤 Sending prompt to OpenAI (preview):")
+    print(prompt[:500])
+
     try:
-        response = openai.ChatCompletion.create(
-            model="gpt-4o-mini",
+        response = client.chat.completions.create(
+            model="gpt-4o",
             messages=[
                 {"role": "system", "content": "You are a helpful assistant."},
                 {"role": "user", "content": prompt}
             ]
         )
-        return response['choices'][0]['message']['content'].strip()
-    except openai.error.OpenAIError as e:
-        print(f"Error generating study review: {e}")
+        print("✅ Response received from OpenAI")
+        return response.choices[0].message.content.strip()
+
+    except OpenAIError as e:
+        print(f"❌ OpenAI API error: {e}")
         return "An error occurred while generating the study review."
-
-
-
-def extract_text_from_pdf(file):
-    file.seek(0)
-    try:
-        doc = fitz.open(stream=file.read(), filetype="pdf")
-        text = ""
-        for page in doc:
-            page_text = page.get_text()
-            text += page_text + "\n"
-        return text.strip()
-    except Exception as e:
-        print(f"Error extracting PDF text: {e}")
-        return ""

@@ -10,7 +10,7 @@
 <p><strong>Created At:</strong> {{ session.created_at }}</p>
 
 <h2>AI-Generated Review</h2>
-<p>{{ review_text }}</p>
+<p>{{ review_text|linebreaks }}</p>
 
 <a href="{% url 'dashboard' %}">Back to Dashboard</a>
 </body>
