@@ -11,13 +11,15 @@
 
 <h2>What would you like to do with "{{ session.title }}"?</h2>
 
-<form method="post">
-    {% csrf_token %}
-    <button type="submit" name="action" value="quiz">Generate Quiz</button><br><br>
-    <button type="submit" name="action" value="flashcards">Create Flashcards</button><br><br>
-    <button type="submit" name="action" value="tts">Read Notes Aloud</button><br><br>
-    <button type="submit" name="action" value="review">Create Review</button>
-</form>
+    <form method="post">
+        {% csrf_token %}
+        <button type="submit" name="action" value="quiz">Generate Quiz</button><br><br>
+        <button type="submit" name="action" value="flashcards">Create Flashcards</button><br><br>
+        <button type="submit" name="action" value="tts">Read Notes Aloud</button><br><br>
+        <a href="{% url 'session_review' session.id %}">
+            <button type="button">Create Review</button>
+        </a>
+    </form>
 
 {% endblock %}
 {% if notes %}

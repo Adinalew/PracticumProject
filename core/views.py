@@ -10,7 +10,7 @@ from .models import StudySession, UploadedFile, ExtractedNote
 from django.contrib import messages
 import os
 from .utils import extract_text_from_image, extract_text_from_file
-
+from .utils import get_text_from_session, generate_study_review
 def home_view(request):
     return render(request, 'home.html')  # Render your homepage HTML
 
@@ -32,7 +32,6 @@ def dashboard_view(request):
 def logout_view(request):
     logout(request)
     return redirect('home')  # after logout
-
 @login_required
 def start_session_view(request):
     if request.method == 'POST':
@@ -49,20 +48,18 @@ def start_session_view(request):
                 session.save()
 
                 for f in files:
-                    UploadedFile.objects.create(
+                    # Save the file first
+                    uploaded_file = UploadedFile.objects.create(
                         user=request.user,
                         session=session,
                         file=f
                     )
 
-                    # Decide what kind of processing to do
-                    if f.name.lower().endswith(('.png', '.jpg', '.jpeg')):
-                        extracted = extract_text_from_image(f)
-                        ExtractedNote.objects.create(session=session, text=extracted)
+                    # Use your utility method to extract text (works for all types)
+                    extracted_text = extract_text_from_uploaded_file(uploaded_file)
 
-                    elif f.name.lower().endswith('.txt'):
-                        content = f.read().decode('utf-8')
-                        ExtractedNote.objects.create(session=session, text=content)
+                    if extracted_text.strip():
+                        ExtractedNote.objects.create(session=session, text=extracted_text)
 
                 return redirect('session_actions', session_id=session.id)
 
@@ -111,24 +108,27 @@ def upload_files_to_session(request, session_id):
         if form.is_valid():
             print("Form is valid. Processing uploaded files...")
             for f in request.FILES.getlist('files'):
-                print(f"Processing file: {f.name}")
+                try:
+                    print(f"Processing file: {f.name}")
 
-                # Create UploadedFile instance and save it
-                uploaded_file = UploadedFile.objects.create(
-                    user=request.user,
-                    session=session,
-                    file=f
-                )
+                    # Create UploadedFile instance and save it
+                    uploaded_file = UploadedFile.objects.create(
+                        user=request.user,
+                        session=session,
+                        file=f
+                    )
 
-                # Extract text from saved uploaded file
-                extracted_text = extract_text_from_uploaded_file(uploaded_file)
-                print(f"OCR extracted text for file {f.name}:\n{extracted_text}")
+                    # Extract text from saved uploaded file
+                    extracted_text = extract_text_from_uploaded_file(uploaded_file)
+                    print(f"OCR extracted text for file {f.name}:\n{extracted_text}")
 
-                if extracted_text.strip():
-                    ExtractedNote.objects.create(session=session, text=extracted_text)
-                    print(f"Extracted note created for file: {f.name}")
-                else:
-                    print(f"No text extracted from file {f.name}, skipping note creation.")
+                    if extracted_text.strip():
+                        ExtractedNote.objects.create(session=session, text=extracted_text)
+                        print(f"Extracted note created for file: {f.name}")
+                    else:
+                        print(f"No text extracted from file {f.name}, skipping note creation.")
+                except Exception as e:
+                    print(f"Error processing file {f.name}: {e}")
 
             print("All files processed successfully.")
         else:
@@ -139,7 +139,6 @@ def upload_files_to_session(request, session_id):
         print("Rendering upload form.")
 
     return render(request, 'core/upload.html', {'form': form, 'session': session})
-
 @login_required
 def session_detail(request, session_id):
     print(f"Fetching session with ID: {session_id}")
@@ -199,11 +198,14 @@ def text_to_speech(request, session_id):
     if not text.strip():
         return HttpResponse("No notes available to read aloud.")
 
-    audio = generate_tts_audio(text)
-    response = HttpResponse(audio, content_type='audio/mpeg')
-    response['Content-Disposition'] = 'inline; filename="session_audio.mp3"'
-    return response
-
+    try:
+        audio = generate_tts_audio(text)
+        response = HttpResponse(audio, content_type='audio/mpeg')
+        response['Content-Disposition'] = 'inline; filename="session_audio.mp3"'
+        return response
+    except Exception as e:
+        print(f"Error generating TTS audio: {e}")
+        return HttpResponse("An error occurred while generating the audio.", status=500)
 @login_required
 def review_notes(request, session_id):
     session = get_object_or_404(StudySession, id=session_id, user=request.user)
@@ -211,3 +213,50 @@ def review_notes(request, session_id):
     return render(request, 'core/review.html', {'session': session, 'files': files})
 
 
+@login_required
+def session_review(request, session_id):
+    """
+    View to generate and display an AI-generated study review for a session.
+
+    :param request: The HTTP request object
+    :param session_id: The ID of the StudySession
+    :return: Rendered template with the session and review text
+    """
+    # Get the StudySession object for the given ID and logged-in user
+    session = get_object_or_404(StudySession, id=session_id, user=request.user)
+
+    # Extract combined notes text from the session
+    combined_text = get_text_from_session(session)
+
+    if not combined_text.strip():
+        return HttpResponse("No notes available for review.")
+
+    try:
+        # Generate the AI-generated review
+        review_text = generate_study_review(combined_text)
+    except Exception as e:
+        print(f"Error generating study review: {e}")
+        return HttpResponse("An error occurred while generating the review.", status=500)
+
+    # Render the template with the session and review text as context
+    return render(request, 'core/session_review.html', {
+        'session': session,
+        'review_text': review_text,
+    })
+
+@login_required
+def debug_extracted_notes(request, session_id):
+    """
+    Debugging view to verify ExtractedNote objects for a session.
+    """
+    session = get_object_or_404(StudySession, id=session_id, user=request.user)
+    notes = ExtractedNote.objects.filter(session=session)
+
+    if not notes.exists():
+        print(f"No ExtractedNote objects found for session ID: {session_id}")
+    else:
+        print(f"ExtractedNote objects for session ID {session_id}:")
+        for note in notes:
+            print(f"- Note ID: {note.id}, Text Preview: {note.text[:100]}")
+
+    return HttpResponse("Debugging complete. Check the server logs for details.")

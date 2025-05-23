@@ -24,6 +24,8 @@ urlpatterns = [
     path('sessions/<int:session_id>/', views.session_detail, name='session_detail'),
     path('sessions/<int:session_id>/delete/', views.delete_session, name='delete_session'),
     path('session/<int:session_id>/upload/', views.upload_files_to_session, name='upload_files_to_session'),
+    path('session/<int:session_id>/review/', views.session_review, name='session_review'),
+    path('session/<int:session_id>/debug-notes/', views.debug_extracted_notes, name='debug_extracted_notes'),
 ]
 
 if settings.DEBUG:

@@ -1,0 +1,17 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Session Review</title>
+</head>
+<body>
+<h1>Session Review: {{ session.title }}</h1>
+<p><strong>Created At:</strong> {{ session.created_at }}</p>
+
+<h2>AI-Generated Review</h2>
+<p>{{ review_text }}</p>
+
+<a href="{% url 'dashboard' %}">Back to Dashboard</a>
+</body>
+</html>
