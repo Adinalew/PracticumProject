@@ -19,6 +19,7 @@ urlpatterns = [
     path('session/<int:session_id>/quiz/', generate_quiz, name='generate_quiz'),
     path('session/<int:session_id>/tts/', views.text_to_speech, name='text_to_speech'),
     path('session/<int:session_id>/review/', views.session_review, name='session_review'),
+    path('session/<int:session_id>/customize-review/', views.customize_review, name='customize_review'),  # ✅ Add this line
 
     path('sessions/<int:session_id>/', views.session_detail, name='session_detail'),
     path('sessions/<int:session_id>/delete/', views.delete_session, name='delete_session'),

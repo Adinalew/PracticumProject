@@ -4,12 +4,18 @@ import pytesseract
 from PIL import Image, ImageEnhance, ImageFilter
 import io
 import os
+import httpx
 from openai import OpenAI, OpenAIError
+from dotenv import load_dotenv
 from django.conf import settings
 from docx import Document
 from pptx import Presentation
 import fitz  # PyMuPDF
 
+# Load environment variables
+load_dotenv()
+
+# Tesseract setup
 pytesseract.pytesseract.tesseract_cmd = r'C:\Program Files\Tesseract-OCR\tesseract.exe'
 
 def preprocess_image(image_file):
@@ -111,19 +117,35 @@ def get_text_from_session(session):
     notes = session.extracted_notes.all()
     return "\n\n".join(note.text for note in notes if note.text.strip())
 
-def generate_study_review(text):
-    client = OpenAI(api_key=settings.OPENAI_API_KEY)
+def generate_study_review(text, options=None):
+    api_key = os.getenv("OPENAI_API_KEY")
+    cert_path = "C:/certificate/2023 techloq bundle certificate.crt"
+
+    if os.path.exists(cert_path):
+        print("✅ Using Techloq certificate for SSL.")
+        http_client = httpx.Client(verify=cert_path)
+    else:
+        print("ℹ️ No custom cert found. Using default SSL.")
+        http_client = httpx.Client()
+
+    client = OpenAI(api_key=api_key, http_client=http_client)
+
+    # Include user preferences in prompt
+    if options:
+        notes = (
+            f"Language level: {options.get('language_level')}, "
+            f"Teaching style: {options.get('explanation_style')}, "
+            f"Depth: {options.get('review_depth')}, "
+            f"User notes: {options.get('additional_notes') or 'None'}."
+        )
+    else:
+        notes = "No additional preferences provided."
 
     prompt = (
-        "You are an AI assistant tasked with creating a detailed study review. "
-        "Based on the following input text, generate a review that highlights key points, "
-        "definitions, and main concepts:\n\n"
-        f"{text}\n\n"
-        "Please provide a structured and concise review."
+        f"You are an AI assistant. Based on the following notes, create a study review.\n"
+        f"{notes}\n\n"
+        f"Study text:\n{text}"
     )
-
-    print("📤 Sending prompt to OpenAI (preview):")
-    print(prompt[:500])
 
     try:
         response = client.chat.completions.create(
@@ -133,9 +155,7 @@ def generate_study_review(text):
                 {"role": "user", "content": prompt}
             ]
         )
-        print("✅ Response received from OpenAI")
         return response.choices[0].message.content.strip()
-
     except OpenAIError as e:
         print(f"❌ OpenAI API error: {e}")
         return "An error occurred while generating the study review."

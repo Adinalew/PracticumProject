@@ -19,6 +19,31 @@ from .utils import (
     generate_study_review,
 )
 
+# ✨ New form for customizing the AI-generated review
+class ReviewCustomizationForm(forms.Form):
+    LANGUAGE_LEVEL_CHOICES = [
+        ('beginner', 'Beginner'),
+        ('intermediate', 'Intermediate'),
+        ('advanced', 'Advanced'),
+    ]
+    STYLE_CHOICES = [
+        ('first_grade', 'Explain it like I’m in 1st grade'),
+        ('normal', 'Standard academic tone'),
+        ('college', 'University-level explanation'),
+    ]
+    DEPTH_CHOICES = [
+        ('quick', 'Quick summary'),
+        ('crash', 'Crash course'),
+        ('extensive', 'Extensive detailed review'),
+    ]
+
+    language_level = forms.ChoiceField(choices=LANGUAGE_LEVEL_CHOICES, label="Language Level")
+    explanation_style = forms.ChoiceField(choices=STYLE_CHOICES, label="Teaching Style")
+    review_depth = forms.ChoiceField(choices=DEPTH_CHOICES, label="Depth of Review")
+    selected_files = forms.MultipleChoiceField(widget=forms.CheckboxSelectMultiple, required=False)
+    additional_notes = forms.CharField(widget=forms.Textarea, required=False)
+
+
 def home_view(request):
     return render(request, 'home.html')
 
@@ -92,7 +117,7 @@ def session_action_view(request, session_id):
         elif action == 'tts':
             return redirect('text_to_speech', session_id=session.id)
         elif action == 'review':
-            return redirect('session_review', session_id=session.id)
+            return redirect('customize_review', session_id=session.id)  # changed to customization form
 
     notes = session.extracted_notes.all()
 
@@ -191,16 +216,48 @@ def text_to_speech(request, session_id):
         print(f"Error generating TTS audio: {e}")
         return HttpResponse("An error occurred while generating the audio.", status=500)
 
+# ✨ NEW: Customization form before review generation
+@login_required
+def customize_review(request, session_id):
+    session = get_object_or_404(StudySession, id=session_id, user=request.user)
+    uploaded_files = session.uploaded_files.all()
+    file_choices = [(str(f.id), f.file.name) for f in uploaded_files]
+
+    if request.method == 'POST':
+        form = ReviewCustomizationForm(request.POST)
+        form.fields['selected_files'].choices = file_choices
+        if form.is_valid():
+            request.session['review_options'] = form.cleaned_data
+            return redirect('session_review', session_id=session.id)
+    else:
+        form = ReviewCustomizationForm()
+        form.fields['selected_files'].choices = file_choices
+
+    return render(request, 'core/customize_review.html', {
+        'form': form,
+        'session': session,
+    })
+
+# ✨ UPDATED: Reads from user-provided customization
 @login_required
 def session_review(request, session_id):
     session = get_object_or_404(StudySession, id=session_id, user=request.user)
-    combined_text = get_text_from_session(session)
+    options = request.session.get('review_options')
+
+    if not options:
+        return redirect('customize_review', session_id=session.id)
+
+    selected_file_ids = options.get('selected_files', [])
+    selected_files = UploadedFile.objects.filter(id__in=selected_file_ids)
+    combined_text = ""
+    for file in selected_files:
+        combined_text += extract_text_from_uploaded_file(file) + "\n\n"
 
     if not combined_text.strip():
         return HttpResponse("No notes available for review.")
 
     try:
-        review_text = generate_study_review(combined_text)
+        review_text = generate_study_review(combined_text, options)
     except Exception as e:
         print(f"Error generating study review: {e}")
         return HttpResponse("An error occurred while generating the review.", status=500)
