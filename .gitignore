@@ -17,6 +17,7 @@ ENV/
 # VS Code or IntelliJ (optional)
 .idea/
 .vscode/
+*.iml
 
 # OS files
 .DS_Store
@@ -30,4 +31,6 @@ staticfiles/
 
 # Environment variables / secrets
 .env
+
+
 
