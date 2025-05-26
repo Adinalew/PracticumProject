@@ -10,7 +10,11 @@
 <p><strong>Created At:</strong> {{ session.created_at }}</p>
 
 <h2>AI-Generated Review</h2>
-<p>{{ review_text|linebreaks }}</p>
+{% if review_text %}
+    <p>{{ review_text|linebreaks }}</p>
+{% else %}
+    <p>No review available.</p>
+{% endif %}
 
 <a href="{% url 'dashboard' %}">Back to Dashboard</a>
 </body>

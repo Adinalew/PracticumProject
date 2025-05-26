@@ -2,10 +2,13 @@ from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth.forms import UserCreationForm
 from django.contrib.auth.decorators import login_required
 from django.contrib.auth import logout
-from .forms import StudySessionForm, MultiFileUploadForm
-from django.http import HttpResponse
-from .models import StudySession, UploadedFile, ExtractedNote
 from django.contrib import messages
+from django.http import HttpResponse
+from django import forms
+
+from .forms import StudySessionForm, MultiFileUploadForm
+from .models import StudySession, UploadedFile, ExtractedNote
+
 from .utils import (
     extract_text_from_uploaded_file,
     extract_text_from_file,
@@ -13,7 +16,7 @@ from .utils import (
     extract_text_from_pdf,
     generate_tts_audio,
     get_text_from_session,
-    generate_study_review
+    generate_study_review,
 )
 
 def home_view(request):
@@ -29,14 +32,14 @@ def register_view(request):
         form = UserCreationForm()
     return render(request, 'register.html', {'form': form})
 
+def logout_view(request):
+    logout(request)
+    return redirect('home')
+
 @login_required
 def dashboard_view(request):
     sessions = StudySession.objects.filter(user=request.user).order_by('-created_at')
     return render(request, 'core/dashboard.html', {'sessions': sessions})
-
-def logout_view(request):
-    logout(request)
-    return redirect('home')
 
 @login_required
 def start_session_view(request):
@@ -61,7 +64,7 @@ def start_session_view(request):
                     )
                     extracted_text = extract_text_from_uploaded_file(uploaded_file)
                     if extracted_text.strip():
-                        ExtractedNote.objects.create(session=session, text=extracted_text)
+                        ExtractedNote.objects.create(session=session, text=extracted_text, file=uploaded_file)
 
                 return redirect('session_actions', session_id=session.id)
 
@@ -105,25 +108,41 @@ def upload_files_to_session(request, session_id):
     if request.method == 'POST':
         form = MultiFileUploadForm(request.POST, request.FILES)
         if form.is_valid():
-            for f in request.FILES.getlist('files'):
-                uploaded_file = UploadedFile.objects.create(
-                    user=request.user,
-                    session=session,
-                    file=f
-                )
-                extracted_text = extract_text_from_uploaded_file(uploaded_file)
-                if extracted_text.strip():
-                    ExtractedNote.objects.create(session=session, text=extracted_text)
+            files = request.FILES.getlist('files')
+            if not files:
+                messages.error(request, "No files selected for upload.")
+            else:
+                for f in files:
+                    uploaded_file = UploadedFile.objects.create(
+                        user=request.user,
+                        session=session,
+                        file=f
+                    )
+                    extracted_text = extract_text_from_uploaded_file(uploaded_file)
+                    if extracted_text.strip():
+                        ExtractedNote.objects.create(session=session, text=extracted_text, file=uploaded_file)
+
+                messages.success(request, "Files uploaded successfully!")
+        else:
+            messages.error(request, "Error in file upload form.")
+
         return redirect('session_detail', session_id=session.id)
     else:
         form = MultiFileUploadForm()
 
-    return render(request, 'core/upload.html', {'form': form, 'session': session})
+    uploaded_files = session.uploaded_files.all()
+
+    return render(request, 'core/upload.html', {
+        'form': form,
+        'session': session,
+        'uploaded_files': uploaded_files
+    })
 
 @login_required
 def session_detail(request, session_id):
     session = get_object_or_404(StudySession, id=session_id, user=request.user)
     notes = session.extracted_notes.all()
+    uploaded_files = session.uploaded_files.all()
     flashcards = session.flashcards.all()
     quizzes = session.quizzes.all()
     summaries = session.summaries.all()
@@ -131,6 +150,7 @@ def session_detail(request, session_id):
     return render(request, 'core/session_detail.html', {
         'session': session,
         'notes': notes,
+        'uploaded_files': uploaded_files,
         'flashcards': flashcards,
         'quizzes': quizzes,
         'summaries': summaries,

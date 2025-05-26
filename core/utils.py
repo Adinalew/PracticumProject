@@ -4,8 +4,7 @@ import pytesseract
 from PIL import Image, ImageEnhance, ImageFilter
 import io
 import os
-import openai
-from openai import OpenAIError, OpenAI
+from openai import OpenAI, OpenAIError
 from django.conf import settings
 from docx import Document
 from pptx import Presentation
@@ -111,7 +110,6 @@ def generate_tts_audio(text):
 def get_text_from_session(session):
     notes = session.extracted_notes.all()
     return "\n\n".join(note.text for note in notes if note.text.strip())
-
 
 def generate_study_review(text):
     client = OpenAI(api_key=settings.OPENAI_API_KEY)

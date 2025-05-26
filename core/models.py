@@ -37,8 +37,8 @@ class Quiz(models.Model):
 
 class ExtractedNote(models.Model):
     session = models.ForeignKey(StudySession, related_name='extracted_notes', on_delete=models.CASCADE)
+    file = models.ForeignKey('UploadedFile', null=True, blank=True, on_delete=models.SET_NULL, related_name='notes')
     text = models.TextField()
-    file = models.FileField(upload_to='uploads/', null=True, blank=True)
     created_at = models.DateTimeField(auto_now_add=True)
 
     def __str__(self):

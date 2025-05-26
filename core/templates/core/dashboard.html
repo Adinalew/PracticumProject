@@ -1,35 +1,98 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-  <meta charset="UTF-8">
-  <title>Your Study Sessions</title>
-  <style>
-    ul { list-style-type: none; padding: 0; }
-    li { margin-bottom: 10px; }
-    .session-actions { margin-left: 10px; }
-  </style>
-</head>
-<body>
 {% extends 'core/base.html' %}
 {% block content %}
-<h2>Your Study Sessions</h2>
-{% if sessions %}
-<ul>
-  {% for session in sessions %}
-  <li>
-    <strong>{{ session.title }}</strong> – {{ session.created_at|date:"M d, Y H:i" }}
-    <span class="session-actions">
-      <a href="{% url 'session_detail' session.id %}">View Details</a> |
-      <a href="{% url 'delete_session' session.id %}" onclick="return confirm('⚠️ Are you sure you want to delete this session? This action cannot be undone.')">🗑 Delete</a>
-    </span>
-  </li>
-  {% endfor %}
-</ul>
-{% else %}
-<p>No study sessions yet.</p>
-{% endif %}
 
-<a href="{% url 'start_session' %}" class="button">Start New Session</a>
+    <style>
+        .dashboard-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 30px;
+        }
+
+        .start-session-btn {
+            padding: 10px 18px;
+            background-color: #4CAF50;
+            color: white;
+            text-decoration: none;
+            border-radius: 8px;
+            font-size: 16px;
+        }
+
+        .session-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+            gap: 20px;
+        }
+
+        .session-card {
+            background-color: #f9f9f9;
+            border-radius: 10px;
+            padding: 20px;
+            box-shadow: 0 2px 6px rgba(0,0,0,0.1);
+            transition: 0.2s ease;
+            position: relative;
+        }
+
+        .session-card:hover {
+            background-color: #f0f0f0;
+            transform: scale(1.02);
+        }
+
+        .session-title {
+            font-size: 18px;
+            font-weight: bold;
+            margin-bottom: 5px;
+        }
+
+        .session-date {
+            font-size: 14px;
+            color: #777;
+        }
+
+        .delete-btn {
+            position: absolute;
+            top: 12px;
+            right: 12px;
+            background: none;
+            border: none;
+            cursor: pointer;
+            font-size: 16px;
+            color: #c00;
+        }
+
+        .delete-btn:hover {
+            color: #900;
+        }
+
+        .card-link {
+            color: inherit;
+            text-decoration: none;
+            display: block;
+        }
+    </style>
+
+    <div class="dashboard-header">
+        <h2>Your Study Sessions</h2>
+        <a href="{% url 'start_session' %}" class="start-session-btn">➕ Start New Session</a>
+    </div>
+
+    {% if sessions %}
+        <div class="session-grid">
+            {% for session in sessions %}
+                <div class="session-card">
+                    <a href="{% url 'session_detail' session.id %}" class="card-link">
+                        <div class="session-title">{{ session.title }}</div>
+                        <div class="session-date">Created: {{ session.created_at|date:"M d, Y H:i" }}</div>
+                    </a>
+                    <form method="POST" action="{% url 'delete_session' session.id %}" onsubmit="return confirm('⚠️ Are you sure you want to delete this session? This action cannot be undone.');">
+                        {% csrf_token %}
+                        <button type="submit" class="delete-btn" title="Delete session">🗑</button>
+                    </form>
+                </div>
+            {% endfor %}
+        </div>
+    {% else %}
+        <p>You have no study sessions yet.</p>
+    {% endif %}
+
 {% endblock %}
-</body>
-</html>

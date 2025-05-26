@@ -1,28 +1,70 @@
 {% extends 'core/base.html' %}
 {% block content %}
 
-<h1>Upload Files for "{{ session.title }}"</h1>
-<form method="POST" enctype="multipart/form-data" action="{% url 'upload_files_to_session' session.id %}">
-    {% csrf_token %}
-    {{ form.as_p }}
-    <button type="submit">Upload Files</button>
-</form>
+    <style>
+        .upload-container {
+            max-width: 600px;
+            margin: 30px auto;
+            padding: 25px;
+            background-color: #f9f9f9;
+            border-radius: 10px;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.05);
+        }
 
-<h2>Uploaded Files</h2>
-{% if session.uploaded_files.all %}
-<ul>
-    {% for file in session.uploaded_files.all %}
-    <li>
-        <a href="{{ file.file.url }}" target="_blank">{{ file.file.name }}</a>
-    </li>
-    {% empty %}
-    <p>No files uploaded yet for this session.</p>
-    {% endfor %}
-</ul>
-{% else %}
-<p>No files uploaded yet for this session.</p>
-{% endif %}
+        .upload-container h1 {
+            text-align: center;
+            margin-bottom: 25px;
+        }
 
-<p><a href="{% url 'session_detail' session.id %}">⬅ Back to Session</a></p>
+        .upload-container form {
+            display: flex;
+            flex-direction: column;
+        }
+
+        .upload-container button {
+            margin-top: 20px;
+            padding: 10px;
+            background-color: #4CAF50;
+            color: white;
+            border: none;
+            font-size: 16px;
+            border-radius: 6px;
+            cursor: pointer;
+        }
+
+        .upload-container button:hover {
+            background-color: #3e9c44;
+        }
+
+        ul.uploaded-files {
+            margin-top: 30px;
+            padding-left: 20px;
+        }
+    </style>
+
+    <div class="upload-container">
+        <h1>📤 Upload Files for "{{ session.title }}"</h1>
+
+        <form method="POST" enctype="multipart/form-data">
+            {% csrf_token %}
+            {{ form.as_p }}
+            <button type="submit">Upload Files</button>
+        </form>
+
+        <h2>🗂 Uploaded Files</h2>
+        {% if uploaded_files %}
+            <ul class="uploaded-files">
+                {% for file in uploaded_files %}
+                    <li><a href="{{ file.file.url }}" target="_blank">{{ file.file.name }}</a></li>
+                {% empty %}
+                    <li>No files uploaded yet for this session.</li>
+                {% endfor %}
+            </ul>
+        {% else %}
+            <p>No files uploaded yet for this session.</p>
+        {% endif %}
+
+        <p><a href="{% url 'session_detail' session.id %}">⬅ Back to Session</a></p>
+    </div>
 
 {% endblock %}

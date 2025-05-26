@@ -7,12 +7,10 @@ class MultiFileInput(forms.ClearableFileInput):
 class MultiFileUploadForm(forms.Form):
     files = forms.FileField(
         widget=MultiFileInput(attrs={'multiple': True}),
-        required=False  # Optional so session can still submit with no files
+        required=False
     )
 
 class StudySessionForm(forms.ModelForm):
     class Meta:
         model = StudySession
-        fields = ['title']  # No FileField here
-
-
+        fields = ['title']
