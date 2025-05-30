@@ -32,5 +32,9 @@ staticfiles/
 # Environment variables / secrets
 .env
 
+.idea/misc.xml
+.idea/vcs.xml
+
+
 
 

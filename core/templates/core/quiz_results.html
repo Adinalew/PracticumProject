@@ -1,0 +1,19 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Quiz Results</title>
+</head>
+<body>
+<h2>Quiz Results (Score: {{ attempt.score }}%)</h2>
+
+{% for ua in user_answers %}
+<div>
+    <p><strong>Q: {{ ua.question.text }}</strong></p>
+    <p>Your answer: {{ ua.answer }}</p>
+    <p>Correct answer: {{ ua.question.correct_answer }}</p>
+    <p>{% if ua.is_correct %}Correct!{% else %}Incorrect.{% endif %}</p>
+{% endfor %}
+</div>
+</body>
+</html>

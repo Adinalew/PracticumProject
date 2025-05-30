@@ -19,6 +19,10 @@ from .utils import (
     generate_study_review,
 )
 
+from .models import StudySession, Quiz, Question, QuizAttempt, UserAnswer
+from .forms import QuizOptionsForm
+import json
+
 # ✨ New form for customizing the AI-generated review
 class ReviewCustomizationForm(forms.Form):
     LANGUAGE_LEVEL_CHOICES = [
@@ -194,11 +198,6 @@ def generate_flashcards(request, session_id):
     return render(request, 'core/flashcards.html', {'session': session})
 
 @login_required
-def generate_quiz(request, session_id):
-    session = get_object_or_404(StudySession, id=session_id, user=request.user)
-    return render(request, 'core/quiz.html', {'session': session})
-
-@login_required
 def text_to_speech(request, session_id):
     session = get_object_or_404(StudySession, id=session_id, user=request.user)
     notes = session.extracted_notes.all()
@@ -279,3 +278,85 @@ def debug_extracted_notes(request, session_id):
             print(f"- Note ID: {note.id}, Text Preview: {note.text[:100]}")
 
     return HttpResponse("Debugging complete. Check the server logs for details.")
+
+@login_required
+def quiz_options_view(request, session_id):
+    session = get_object_or_404(StudySession, id=session_id, user=request.user)
+
+    if request.method == 'POST':
+        form = QuizOptionsForm(request.POST)
+        if form.is_valid():
+            qtypes = form.cleaned_data['qtypes']
+
+            # TODO: Call OpenAI API here with qtypes and session content to generate questions.
+            # For now, create an empty Quiz for demonstration:
+            quiz = Quiz.objects.create(session=session)
+
+            # You should parse OpenAI response and save Question objects here.
+            # Example placeholder:
+            # Question.objects.create(quiz=quiz, question_type='mc', text='Example question?', options=['A', 'B', 'C'], correct_answer='A')
+
+            return redirect('take_quiz', quiz_id=quiz.id)
+    else:
+        form = QuizOptionsForm()
+
+    return render(request, 'core/quiz_options.html', {'form': form, 'session': session})
+
+@login_required
+def take_quiz_view(request, quiz_id):
+    quiz = get_object_or_404(Quiz, id=quiz_id, session__user=request.user)
+    questions = Question.objects.filter(quiz=quiz)
+
+    if request.method == 'POST':
+        # Process submitted answers and grade
+        attempt = QuizAttempt.objects.create(quiz=quiz, user=request.user, score=0)
+        total_questions = questions.count()
+        correct_count = 0
+
+        for question in questions:
+            user_answer = request.POST.get(f'question_{question.id}')
+            # TODO: Adjust parsing for complex types (JSON, lists) as needed.
+
+            # Simple correctness check (expand logic per question_type)
+            is_correct = False
+            if question.question_type in ['mc', 'tf', 'fib', 'short']:
+                # For JSONField answers, parse string user_answer to comparable format if needed
+                correct = question.correct_answer
+                if isinstance(correct, list):
+                    is_correct = user_answer in correct
+                else:
+                    is_correct = (str(user_answer).strip().lower() == str(correct).strip().lower())
+            elif question.question_type == 'long':
+                # Optional: manual grading or AI grading
+                is_correct = False
+            elif question.question_type == 'match':
+                # Implement matching logic here
+                is_correct = False
+
+            UserAnswer.objects.create(
+                attempt=attempt,
+                question=question,
+                answer=user_answer,
+                is_correct=is_correct
+            )
+
+            if is_correct:
+                correct_count += 1
+
+        score = (correct_count / total_questions) * 100 if total_questions else 0
+        attempt.score = score
+        attempt.save()
+
+        return redirect('quiz_results', attempt_id=attempt.id)
+
+    return render(request, 'core/take_quiz.html', {'quiz': quiz, 'questions': questions})
+
+@login_required
+def quiz_results_view(request, attempt_id):
+    attempt = get_object_or_404(QuizAttempt, id=attempt_id, user=request.user)
+    user_answers = UserAnswer.objects.filter(attempt=attempt).select_related('question')
+
+    return render(request, 'core/quiz_results.html', {
+        'attempt': attempt,
+        'user_answers': user_answers,
+    })

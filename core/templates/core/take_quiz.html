@@ -1,0 +1,48 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Take Quiz</title>
+</head>
+<body>
+<h2>Take Quiz (ID: {{ quiz.id }})</h2>
+
+<form method="post">
+    {% csrf_token %}
+
+    {% for question in questions %}
+    <div>
+        <p><strong>Q{{ forloop.counter }}: {{ question.text }}</strong></p>
+
+        {% if question.question_type == 'mc' %}
+        {% for option in question.options %}
+        <label>
+            <input type="radio" name="question_{{ question.id }}" value="{{ option }}"> {{ option }}
+        </label><br>
+        {% endfor %}
+
+        {% elif question.question_type == 'tf' %}
+        <label><input type="radio" name="question_{{ question.id }}" value="True"> True</label><br>
+        <label><input type="radio" name="question_{{ question.id }}" value="False"> False</label><br>
+
+        {% elif question.question_type == 'match' %}
+        <!-- For matching, implement UI (e.g., dropdowns) here -->
+        <p>Matching question: answer input TBD</p>
+
+        {% elif question.question_type == 'long' %}
+        <textarea name="question_{{ question.id }}" rows="4" cols="50"></textarea>
+
+        {% elif question.question_type == 'fib' %}
+        <input type="text" name="question_{{ question.id }}">
+
+        {% elif question.question_type == 'short' %}
+        <input type="text" name="question_{{ question.id }}">
+        {% endif %}
+    </div>
+    <hr>
+    {% endfor %}
+
+    <button type="submit">Submit Quiz</button>
+</form>
+</body>
+</html>

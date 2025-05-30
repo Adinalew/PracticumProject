@@ -1,0 +1,41 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Quiz Options</title>
+</head>
+<body>
+{% extends 'core/base.html' %}
+
+{% block content %}
+<h2>🧪 Customize Your Quiz</h2>
+
+<form method="post">
+    {% csrf_token %}
+    {{ form.as_p }}
+    <button type="submit">Generate Quiz</button>
+</form>
+
+<p><a href="{% url 'session_detail' session.id %}">⬅ Back to session</a></p>
+
+{% if quiz %}
+<h3>Generated Quiz</h3>
+<ul>
+    {% for question in quiz.questions.all %}
+    <li>{{ question.text }}</li>
+    <ul>
+        {% for option in question.options.all %}
+        <li>{{ option.text }} {% if option.is_correct %} (Correct) {% endif %}</li>
+        {% endfor %}
+    </ul>
+    {% endfor %}
+</ul>
+{% endif %}
+
+{% if error %}
+<p style="color: red;">{{ error }}</p>
+{% endif %}
+
+{% endblock %}
+</body>
+</html>

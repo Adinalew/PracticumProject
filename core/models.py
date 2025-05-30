@@ -29,7 +29,7 @@ class Flashcard(models.Model):
 
 class Quiz(models.Model):
     session = models.ForeignKey(StudySession, on_delete=models.CASCADE, related_name='quizzes')
-    title = models.CharField(max_length=255)
+    title = models.CharField(max_length=100, default="Untitled")
     created_at = models.DateTimeField(auto_now_add=True)
 
     def __str__(self):
@@ -59,3 +59,31 @@ class Summary(models.Model):
 
     def __str__(self):
         return self.content[:50]
+
+class Question(models.Model):
+    QUESTION_TYPES = [
+        ('mc', 'Multiple Choice'),
+        ('tf', 'True/False'),
+        ('match', 'Matching'),
+        ('long', 'Long Answer'),
+        ('fib', 'Fill in the Blank'),
+        ('short', 'Short Answer'),
+    ]
+    quiz = models.ForeignKey(Quiz, on_delete=models.CASCADE)
+    question_type = models.CharField(max_length=10, choices=QUESTION_TYPES)
+    text = models.TextField()
+    options = models.JSONField(blank=True, null=True)  # for MC, matching, FIB options etc.
+    correct_answer = models.JSONField()  # answer(s) in JSON format (string/list/dict)
+    explanation = models.TextField(blank=True)
+
+class QuizAttempt(models.Model):
+    quiz = models.ForeignKey(Quiz, on_delete=models.CASCADE)
+    user = models.ForeignKey(User, on_delete=models.CASCADE)
+    score = models.FloatField()
+    taken_at = models.DateTimeField(auto_now_add=True)
+
+class UserAnswer(models.Model):
+    attempt = models.ForeignKey(QuizAttempt, on_delete=models.CASCADE)
+    question = models.ForeignKey(Question, on_delete=models.CASCADE)
+    answer = models.JSONField()  # user submitted answer (string/list/dict)
+    is_correct = models.BooleanField()
