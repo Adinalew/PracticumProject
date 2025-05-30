@@ -1,3 +1,4 @@
+import openai
 from gtts import gTTS
 from io import BytesIO
 import pytesseract
@@ -192,3 +193,51 @@ def generate_followup_response(question, previous_review, options=None):
     except OpenAIError as e:
         print(f"Error generating follow-up: {e}")
         return "Sorry, something went wrong while generating your answer."
+
+def generate_flashcards_from_text(text):
+    api_key = os.getenv("OPENAI_API_KEY")
+    cert_path = "C:/certificate/2023 techloq bundle certificate.crt"
+
+    if os.path.exists(cert_path):
+        http_client = httpx.Client(verify=cert_path)
+    else:
+        http_client = httpx.Client()
+
+    client = OpenAI(api_key=api_key, http_client=http_client)
+
+    prompt = (
+        "Read the following study notes and generate 5 helpful flashcards. "
+        "Return the result in the format:\n\n"
+        "Q: ...\nA: ...\n\nQ: ...\nA: ...\n\n[and so on].\n\n"
+        f"NOTES:\n{text}"
+    )
+
+    try:
+        response = client.chat.completions.create(
+            model="gpt-4o",
+            messages=[
+                {"role": "system", "content": "You are a helpful tutor."},
+                {"role": "user", "content": prompt}
+            ],
+            temperature=0.7
+        )
+
+        content = response.choices[0].message.content
+        cards = []
+        lines = content.split('\n')
+        question = answer = None
+
+        for line in lines:
+            if line.strip().startswith("Q:"):
+                question = line.strip()[2:].strip()
+            elif line.strip().startswith("A:"):
+                answer = line.strip()[2:].strip()
+                if question:
+                    cards.append((question, answer))
+                    question = answer = None
+
+        return cards
+
+    except OpenAIError as e:
+        print(f"❌ OpenAI API error: {e}")
+        return []

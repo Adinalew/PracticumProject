@@ -10,11 +10,12 @@ from django.forms import ModelForm, Textarea
 from django.views.decorators.http import require_POST
 from .forms import StudySessionForm, MultiFileUploadForm
 from .models import StudySession, UploadedFile, ExtractedNote
-from .models import FollowUp
+from .models import FollowUp, Flashcard
 from .forms import FollowUpForm
 from .utils import generate_study_review
 from .utils import generate_followup_response
 from django.http import JsonResponse
+from .utils import get_text_from_session, generate_flashcards_from_text
 
 from .utils import (
     extract_text_from_uploaded_file,
@@ -195,8 +196,29 @@ def delete_session(request, session_id):
 @login_required
 def generate_flashcards(request, session_id):
     session = get_object_or_404(StudySession, id=session_id, user=request.user)
-    return render(request, 'core/flashcards.html', {'session': session})
 
+
+    if request.method == 'POST' and request.POST.get('action') == 'regenerate':
+        # Delete old flashcards and regenerate
+        session.flashcards.all().delete()
+        text = get_text_from_session(session)
+        flashcard_data = generate_flashcards_from_text(text)
+        for question, answer in flashcard_data:
+            Flashcard.objects.create(session=session, question=question, answer=answer)
+
+    # If flashcards don't exist yet, generate once
+    elif session.flashcards.count() == 0:
+        text = get_text_from_session(session)
+        flashcard_data = generate_flashcards_from_text(text)
+        for question, answer in flashcard_data:
+            Flashcard.objects.create(session=session, question=question, answer=answer)
+
+    flashcards = session.flashcards.all()
+
+    return render(request, 'core/flashcards.html', {
+        'session': session,
+        'flashcards': flashcards
+    })
 @login_required
 def text_to_speech(request, session_id):
     session = get_object_or_404(StudySession, id=session_id, user=request.user)
