@@ -11,11 +11,13 @@ from django.views.decorators.http import require_POST
 from .forms import StudySessionForm, MultiFileUploadForm
 from .models import StudySession, UploadedFile, ExtractedNote
 from .models import FollowUp, Flashcard
-from .forms import FollowUpForm
+from .forms import FollowUpForm, FlashcardCustomizationForm
 from .utils import generate_study_review
 from .utils import generate_followup_response
 from django.http import JsonResponse
 from .utils import get_text_from_session, generate_flashcards_from_text
+from .utils import generate_flashcards_from_text
+
 
 from .utils import (
     extract_text_from_uploaded_file,
@@ -193,32 +195,53 @@ def delete_session(request, session_id):
     messages.success(request, "Session deleted successfully.")
     return redirect('dashboard')
 
+
 @login_required
 def generate_flashcards(request, session_id):
     session = get_object_or_404(StudySession, id=session_id, user=request.user)
-
-
-    if request.method == 'POST' and request.POST.get('action') == 'regenerate':
-        # Delete old flashcards and regenerate
-        session.flashcards.all().delete()
-        text = get_text_from_session(session)
-        flashcard_data = generate_flashcards_from_text(text)
-        for question, answer in flashcard_data:
-            Flashcard.objects.create(session=session, question=question, answer=answer)
-
-    # If flashcards don't exist yet, generate once
-    elif session.flashcards.count() == 0:
-        text = get_text_from_session(session)
-        flashcard_data = generate_flashcards_from_text(text)
-        for question, answer in flashcard_data:
-            Flashcard.objects.create(session=session, question=question, answer=answer)
-
     flashcards = session.flashcards.all()
+
+    if request.method == 'POST' and 'generate_flashcards' in request.POST:
+        form = FlashcardCustomizationForm(request.POST)
+
+        if form.is_valid():
+            custom_prompt = form.cleaned_data['custom_prompt']
+
+            # Combine text from all ExtractedNotes under each uploaded_file
+            combined_text = ""
+            for uploaded_file in session.uploaded_files.all():
+                for note in uploaded_file.notes.all():
+                    combined_text += note.text + "\n"
+
+            # Clear old flashcards
+            session.flashcards.all().delete()
+
+            try:
+                card_pairs = generate_flashcards_from_text(combined_text, custom_prompt)
+
+                if card_pairs:
+                    for q, a in card_pairs:
+                        Flashcard.objects.create(session=session, question=q, answer=a)
+
+                    flashcards = session.flashcards.all()
+                    messages.success(request, "Flashcards generated successfully!")
+                else:
+                    messages.error(request, "No flashcards were generated. Try a different prompt.")
+
+            except Exception as e:
+                print(f"Flashcard generation failed: {e}")
+                messages.error(request, "An error occurred while generating flashcards.")
+        else:
+            messages.error(request, "Please fix the errors in the form.")
+    else:
+        form = FlashcardCustomizationForm()
 
     return render(request, 'core/flashcards.html', {
         'session': session,
-        'flashcards': flashcards
+        'flashcards': flashcards,
+        'form': form,
     })
+
 @login_required
 def text_to_speech(request, session_id):
     session = get_object_or_404(StudySession, id=session_id, user=request.user)

@@ -59,3 +59,15 @@ class FollowUpForm(forms.ModelForm):
         widgets = {
             'question': forms.Textarea(attrs={'placeholder': 'Ask a follow-up question...'})
         }
+
+class FlashcardCustomizationForm(forms.Form):
+    custom_prompt = forms.CharField(
+        required=False,
+        widget=forms.Textarea(attrs={
+            'placeholder': 'Example: Test me on coding syntax and method usage...',
+            'rows': 3,
+            'class': 'form-control',
+        }),
+        label="Customize Flashcard Prompt",
+        help_text="Optional: Describe how you want your flashcards to be generated.",
+    )

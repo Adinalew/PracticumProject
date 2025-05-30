@@ -194,39 +194,47 @@ def generate_followup_response(question, previous_review, options=None):
         print(f"Error generating follow-up: {e}")
         return "Sorry, something went wrong while generating your answer."
 
-def generate_flashcards_from_text(text):
+def generate_flashcards_from_text(text, custom_prompt=None):
     api_key = os.getenv("OPENAI_API_KEY")
     cert_path = "C:/certificate/2023 techloq bundle certificate.crt"
 
-    if os.path.exists(cert_path):
-        http_client = httpx.Client(verify=cert_path)
-    else:
-        http_client = httpx.Client()
+    if not custom_prompt:
+        custom_prompt = (
+            "Read the following study notes and generate helpful flashcards. "
+            "They should include important terms and clear explanations. "
+            "Return the result in this format:\n\n"
+            "Q: ...\nA: ...\n\nQ: ...\nA: ..."
+        )
 
-    client = OpenAI(api_key=api_key, http_client=http_client)
-
-    prompt = (
-        "Read the following study notes and generate 5 helpful flashcards. "
-        "Return the result in the format:\n\n"
-        "Q: ...\nA: ...\n\nQ: ...\nA: ...\n\n[and so on].\n\n"
-        f"NOTES:\n{text}"
+    # Always append strict instruction at the end
+    enforced_format = (
+    "\n\n---\nIMPORTANT: Return only flashcards in this format:\n"
+    "Q: ...\nA: ...\n\nQ: ...\nA: ...\n"
+    "Do NOT include explanations, greetings, or any markdown formatting."
     )
 
+    prompt = f"{custom_prompt}\n\nSTUDY TEXT:\n{text}{enforced_format}"
+
     try:
+        http_client = httpx.Client(verify=cert_path) if os.path.exists(cert_path) else httpx.Client()
+        client = OpenAI(api_key=api_key, http_client=http_client)
+
         response = client.chat.completions.create(
             model="gpt-4o",
             messages=[
                 {"role": "system", "content": "You are a helpful tutor."},
                 {"role": "user", "content": prompt}
             ],
-            temperature=0.7
+            temperature=0.7,
         )
 
         content = response.choices[0].message.content
+        print("🔎 OpenAI returned:\n", content)  # 👈 TEMP DEBUGGING LINE
+
+        # Parse into Q/A
         cards = []
         lines = content.split('\n')
         question = answer = None
-
         for line in lines:
             if line.strip().startswith("Q:"):
                 question = line.strip()[2:].strip()
@@ -236,8 +244,12 @@ def generate_flashcards_from_text(text):
                     cards.append((question, answer))
                     question = answer = None
 
+        print(f"✅ Parsed {len(cards)} flashcards.")  # 👈 TEMP DEBUGGING LINE
         return cards
 
     except OpenAIError as e:
         print(f"❌ OpenAI API error: {e}")
+        return []
+    except Exception as e:
+        print(f"❌ General error generating flashcards: {e}")
         return []

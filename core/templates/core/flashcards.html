@@ -20,7 +20,37 @@
 
         h1 {
             color: #333;
-            margin-bottom: 10px;
+            margin-bottom: 20px;
+        }
+
+        .form-section {
+            margin-bottom: 30px;
+        }
+
+        textarea {
+            width: 100%;
+            max-width: 800px;
+            height: 100px;
+            padding: 10px;
+            font-size: 14px;
+            border-radius: 8px;
+            border: 1px solid #ccc;
+            resize: vertical;
+        }
+
+        .generate-btn {
+            margin-top: 10px;
+            padding: 10px 25px;
+            font-size: 16px;
+            background-color: #28a745;
+            color: white;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+        }
+
+        .generate-btn:hover {
+            background-color: #218838;
         }
 
         .top-bar {
@@ -28,7 +58,7 @@
             justify-content: center;
             flex-wrap: wrap;
             gap: 15px;
-            margin-bottom: 20px;
+            margin-bottom: 25px;
         }
 
         .toggle-btn, .back-btn {
@@ -148,7 +178,17 @@
         .no-flashcards {
             color: #888;
             font-size: 18px;
-            margin-top: 20px;
+            margin-top: 30px;
+        }
+
+        .message {
+            background-color: #e6ffed;
+            color: #2e7d32;
+            padding: 10px 15px;
+            border: 1px solid #a5d6a7;
+            border-radius: 6px;
+            margin-bottom: 20px;
+            text-align: center;
         }
     </style>
 </head>
@@ -156,12 +196,18 @@
 <div class="container">
     <h1>Flashcards for {{ session.title }}</h1>
 
+    {% if messages %}
+    {% for message in messages %}
+    <div class="message">{{ message }}</div>
+    {% endfor %}
+    {% endif %}
+
+    {% if flashcards %}
     <div class="top-bar">
         <button class="toggle-btn" onclick="toggleView()">Switch to Single View</button>
         <a href="{% url 'dashboard' %}" class="back-btn">Back to Dashboard</a>
     </div>
 
-    {% if flashcards %}
     <div id="gridView" class="flashcards-grid">
         {% for card in flashcards %}
         <div class="flashcard" tabindex="0">
@@ -185,7 +231,20 @@
             <button onclick="nextCard()">Next →</button>
         </div>
     </div>
+
+    <form method="post" style="margin-top: 40px;" class="form-section">
+        {% csrf_token %}
+        <label><strong>Customize Flashcards:</strong></label><br>
+        {{ form.custom_prompt }}
+        <br>
+        <button type="submit" name="generate_flashcards" class="generate-btn">Regenerate with Custom Prompt</button>
+    </form>
+
     {% else %}
+    <form method="post" class="form-section">
+        {% csrf_token %}
+        <button type="submit" name="generate_flashcards" class="generate-btn">Generate Flashcards</button>
+    </form>
     <p class="no-flashcards">No flashcards available for this session.</p>
     {% endif %}
 </div>
@@ -193,10 +252,7 @@
 <script>
     const flashcards = [
         {% for card in flashcards %}
-    {
-        question: `{{ card.question|escapejs }}`,
-            answer: `{{ card.answer|escapejs }}`
-    },
+    { question: `{{ card.question|escapejs }}`, answer: `{{ card.answer|escapejs }}` },
     {% endfor %}
     ];
 
