@@ -10,7 +10,7 @@ from django.forms import ModelForm, Textarea
 from django.views.decorators.http import require_POST
 from .forms import StudySessionForm, MultiFileUploadForm
 from .models import StudySession, UploadedFile, ExtractedNote
-from .models import FollowUp, Flashcard
+from .models import FollowUp, Flashcard, FlashcardSet
 from .forms import FollowUpForm, FlashcardCustomizationForm
 from .utils import generate_study_review
 from .utils import generate_followup_response
@@ -156,7 +156,7 @@ def upload_files_to_session(request, session_id):
         'uploaded_files': uploaded_files
     })
 
-# ✨ Update session_detail to show reviews
+
 @login_required
 def session_detail(request, session_id):
     session = get_object_or_404(StudySession, id=session_id, user=request.user)
@@ -174,20 +174,30 @@ def session_detail(request, session_id):
 
     notes = session.extracted_notes.all()
     uploaded_files = session.uploaded_files.all()
-    flashcards = session.flashcards.all()
+    flashcard_sets = session.flashcard_sets.all().order_by('-created_at')
     quizzes = session.quizzes.all()
     summaries = session.summaries.all().order_by('-created_at')
-    reviews = session.reviews.all().order_by('-created_at')  # ✅ add this line
+    reviews = session.reviews.all().order_by('-created_at')
 
     return render(request, 'core/session_detail.html', {
         'session': session,
         'notes': notes,
         'uploaded_files': uploaded_files,
-        'flashcards': flashcards,
+        'flashcard_sets': flashcard_sets,
         'quizzes': quizzes,
         'summaries': summaries,
-        'reviews': reviews,  # ✅ add this to the context
+        'reviews': reviews,
     })
+@login_required
+def view_flashcard_set(request, set_id):
+    flashcard_set = get_object_or_404(FlashcardSet, id=set_id, session__user=request.user)
+    flashcards = flashcard_set.cards.all().order_by('id')  # or any preferred order
+
+    return render(request, 'core/flashcard_set_detail.html', {
+        'flashcard_set': flashcard_set,
+        'flashcards': flashcards,
+    })
+
 @login_required
 def delete_session(request, session_id):
     session = get_object_or_404(StudySession, id=session_id, user=request.user)
@@ -199,49 +209,65 @@ def delete_session(request, session_id):
 @login_required
 def generate_flashcards(request, session_id):
     session = get_object_or_404(StudySession, id=session_id, user=request.user)
-    flashcards = session.flashcards.all()
+    form = FlashcardCustomizationForm(request.POST or None)
+    flashcard_sets = session.flashcard_sets.all().order_by('-created_at')
+
+    flashcards = []  # default
+
+    if flashcard_sets.exists():
+        latest_set = flashcard_sets.first()
+        flashcards = latest_set.cards.all().order_by('created_at')
 
     if request.method == 'POST' and 'generate_flashcards' in request.POST:
-        form = FlashcardCustomizationForm(request.POST)
-
         if form.is_valid():
             custom_prompt = form.cleaned_data['custom_prompt']
+            title = custom_prompt.strip() if custom_prompt.strip() else "Default"
 
-            # Combine text from all ExtractedNotes under each uploaded_file
             combined_text = ""
             for uploaded_file in session.uploaded_files.all():
                 for note in uploaded_file.notes.all():
                     combined_text += note.text + "\n"
 
-            # Clear old flashcards
-            session.flashcards.all().delete()
-
             try:
                 card_pairs = generate_flashcards_from_text(combined_text, custom_prompt)
 
                 if card_pairs:
+                    flashcard_set = FlashcardSet.objects.create(session=session, title=title)
                     for q, a in card_pairs:
-                        Flashcard.objects.create(session=session, question=q, answer=a)
-
-                    flashcards = session.flashcards.all()
+                        Flashcard.objects.create(flashcard_set=flashcard_set, question=q, answer=a)
                     messages.success(request, "Flashcards generated successfully!")
+
+                    # ✅ show newly generated ones
+                    flashcards = flashcard_set.cards.all().order_by('created_at')
+
                 else:
                     messages.error(request, "No flashcards were generated. Try a different prompt.")
-
             except Exception as e:
                 print(f"Flashcard generation failed: {e}")
                 messages.error(request, "An error occurred while generating flashcards.")
         else:
             messages.error(request, "Please fix the errors in the form.")
-    else:
-        form = FlashcardCustomizationForm()
 
     return render(request, 'core/flashcards.html', {
         'session': session,
-        'flashcards': flashcards,
+        'flashcard_sets': flashcard_sets,
         'form': form,
+        'flashcards': flashcards,  # ✅ pass the cards
     })
+@login_required
+def flashcard_set_detail(request, session_id, set_name):
+    session = get_object_or_404(StudySession, id=session_id, user=request.user)
 
+    flashcards = Flashcard.objects.filter(session=session, name=set_name).order_by('created_at')
+
+    return render(request, 'core/flashcard_set_detail.html', {
+        'session': session,
+        'flashcard_set': {
+            'name': set_name,
+            'session': session
+        },
+        'flashcards': flashcards,
+    })
 @login_required
 def text_to_speech(request, session_id):
     session = get_object_or_404(StudySession, id=session_id, user=request.user)

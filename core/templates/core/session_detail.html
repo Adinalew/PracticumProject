@@ -94,14 +94,20 @@
 
 <hr>
 
-<h3>Flashcards</h3>
-<ul>
-    {% for card in flashcards %}
-    <li><strong>Q:</strong> {{ card.question }}<br><strong>A:</strong> {{ card.answer }}</li>
-    {% empty %}
-    <li>No flashcards yet.</li>
-    {% endfor %}
-</ul>
+<h3>Flashcard Sets</h3>
+{% if flashcard_sets %}
+{% for set in flashcard_sets %}
+<div class="review-card">
+    <div class="review-meta">
+        <strong>Title:</strong> {{ set.title|default:"(Untitled Set)" }}<br>
+        <strong>Created:</strong> {{ set.created_at|date:"M d, Y H:i" }}
+    </div>
+    <a href="{% url 'view_flashcard_set' set.id %}" class="toggle-btn">📚 View Flashcards</a>
+</div>
+{% endfor %}
+{% else %}
+<p>No flashcard sets yet.</p>
+{% endif %}
 
 <h3>Quizzes</h3>
 <ul>

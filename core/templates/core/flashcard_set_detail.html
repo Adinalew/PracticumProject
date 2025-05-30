@@ -1,0 +1,239 @@
+{% extends 'core/base.html' %}
+{% block content %}
+
+<style>
+    body {
+        font-family: Arial, sans-serif;
+        background-color: #f9f9f9;
+        margin: 0;
+        padding: 20px;
+    }
+
+    h1 {
+        color: #333;
+        margin-bottom: 20px;
+        text-align: center;
+    }
+
+    .top-bar {
+        display: flex;
+        justify-content: center;
+        flex-wrap: wrap;
+        gap: 15px;
+        margin-bottom: 25px;
+    }
+
+    .toggle-btn, .back-btn {
+        padding: 10px 20px;
+        font-size: 15px;
+        border: none;
+        border-radius: 5px;
+        cursor: pointer;
+    }
+
+    .toggle-btn {
+        background-color: #28a745;
+        color: white;
+    }
+
+    .toggle-btn:hover {
+        background-color: #218838;
+    }
+
+    .back-btn {
+        background-color: #007bff;
+        color: white;
+    }
+
+    .back-btn:hover {
+        background-color: #0056b3;
+    }
+
+    .flashcards-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+        gap: 20px;
+    }
+
+    .flashcard,
+    .single-flashcard {
+        perspective: 1000px;
+    }
+
+    .flashcard-inner {
+        position: relative;
+        width: 100%;
+        height: 200px;
+        transform-style: preserve-3d;
+        transition: transform 0.6s;
+        cursor: pointer;
+    }
+
+    .flashcard-front,
+    .flashcard-back {
+        position: absolute;
+        width: 100%;
+        height: 100%;
+        backface-visibility: hidden;
+        border-radius: 10px;
+        box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        padding: 30px;
+        font-size: 1.1rem;
+    }
+
+    .flashcard-front {
+        background-color: #ffffff;
+        font-weight: bold;
+        color: #333;
+    }
+
+    .flashcard-back {
+        background-color: #f0f0f0;
+        transform: rotateY(180deg);
+        color: #555;
+    }
+
+    .flashcard:hover .flashcard-inner,
+    .flashcard:focus-within .flashcard-inner {
+        transform: rotateY(180deg);
+    }
+
+    .single-view {
+        display: none;
+        margin-top: 40px;
+    }
+
+    .single-flashcard {
+        width: 100%;
+        max-width: 600px;
+        margin: 0 auto 60px;
+    }
+
+    .single-flashcard .flashcard-inner {
+        height: 280px;
+    }
+
+    .nav-buttons {
+        display: flex;
+        justify-content: center;
+        gap: 30px;
+        margin-bottom: 30px;
+    }
+
+    .nav-buttons button {
+        padding: 10px 25px;
+        font-size: 16px;
+        background-color: #007bff;
+        color: white;
+        border: none;
+        border-radius: 5px;
+        cursor: pointer;
+    }
+
+    .nav-buttons button:hover {
+        background-color: #0056b3;
+    }
+
+    .no-flashcards {
+        color: #888;
+        font-size: 18px;
+        margin-top: 30px;
+        text-align: center;
+    }
+</style>
+
+<h1>Flashcards: {{ flashcard_set.name }}</h1>
+
+<div class="top-bar">
+    <button class="toggle-btn" onclick="toggleView()">Switch to Single View</button>
+    <a href="{% url 'session_detail' flashcard_set.session.id %}" class="back-btn">Back to Session</a>
+</div>
+
+{% if flashcards %}
+<div id="gridView" class="flashcards-grid">
+    {% for card in flashcards %}
+    <div class="flashcard" tabindex="0">
+        <div class="flashcard-inner">
+            <div class="flashcard-front">{{ card.question }}</div>
+            <div class="flashcard-back">{{ card.answer }}</div>
+        </div>
+    </div>
+    {% endfor %}
+</div>
+
+<div id="singleView" class="single-view">
+    <div class="single-flashcard">
+        <div class="flashcard-inner" id="singleFlashcard">
+            <div class="flashcard-front" id="singleFront"></div>
+            <div class="flashcard-back" id="singleBack"></div>
+        </div>
+    </div>
+    <div class="nav-buttons">
+        <button onclick="prevCard()">← Previous</button>
+        <button onclick="nextCard()">Next →</button>
+    </div>
+</div>
+{% else %}
+<p class="no-flashcards">No flashcards found in this set.</p>
+{% endif %}
+
+<script>
+    const flashcards = [
+        {% for card in flashcards %}
+    { question: `{{ card.question|escapejs }}`, answer: `{{ card.answer|escapejs }}` },
+    {% endfor %}
+    ];
+
+    let isSingleView = false;
+    let currentIndex = 0;
+    let flipped = false;
+
+    function toggleView() {
+        isSingleView = !isSingleView;
+        document.getElementById("gridView").style.display = isSingleView ? "none" : "grid";
+        document.getElementById("singleView").style.display = isSingleView ? "block" : "none";
+        document.querySelector(".toggle-btn").innerText = isSingleView ? "Switch to Grid View" : "Switch to Single View";
+
+        if (isSingleView) {
+            currentIndex = 0;
+            flipped = false;
+            showCard(currentIndex);
+        }
+    }
+
+    function showCard(index) {
+        const front = document.getElementById("singleFront");
+        const back = document.getElementById("singleBack");
+        const inner = document.getElementById("singleFlashcard");
+
+        inner.style.transform = "rotateY(0deg)";
+        flipped = false;
+
+        front.innerText = flashcards[index].question;
+        back.innerText = flashcards[index].answer;
+
+        inner.onclick = () => {
+            flipped = !flipped;
+            inner.style.transform = flipped ? "rotateY(180deg)" : "rotateY(0deg)";
+        };
+    }
+
+    function nextCard() {
+        if (currentIndex < flashcards.length - 1) {
+            currentIndex++;
+            showCard(currentIndex);
+        }
+    }
+
+    function prevCard() {
+        if (currentIndex > 0) {
+            currentIndex--;
+            showCard(currentIndex);
+        }
+    }
+</script>
+
+{% endblock %}

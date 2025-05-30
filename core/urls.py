@@ -1,7 +1,7 @@
 from . import views
 from django.urls import path
 from django.contrib.auth import views as auth_views
-from .views import home_view, generate_flashcards, text_to_speech, view_review, submit_followup
+from .views import home_view, generate_flashcards, text_to_speech, view_review, submit_followup, view_flashcard_set
 from django.conf import settings
 from django.conf.urls.static import static
 
@@ -28,6 +28,8 @@ urlpatterns = [
     path('reviews/<int:review_id>/', view_review, name='view_review'),
     path('reviews/<int:review_id>/followup/', submit_followup, name='submit_followup'),
     path('session/<int:session_id>/reviews/', views.session_reviews, name='session_reviews'),
+    path('session/<int:session_id>/flashcards/<str:set_name>/', views.flashcard_set_detail, name='flashcard_set_detail'),
+    path('flashcards/<int:set_id>/', view_flashcard_set, name='view_flashcard_set'),
 ]
 
 if settings.DEBUG:
