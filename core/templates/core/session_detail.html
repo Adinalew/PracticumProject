@@ -12,19 +12,37 @@
         line-height: 1.5;
         box-shadow: 1px 1px 4px rgba(0,0,0,0.1);
     }
-    .toggle-btn {
-        margin: 10px 0;
-        padding: 6px 12px;
+
+    .toggle-btn, .action-button {
+        margin: 10px 5px 10px 0;
+        padding: 8px 14px;
         font-size: 14px;
         border: none;
         background-color: #007bff;
         color: white;
         border-radius: 4px;
         cursor: pointer;
+        text-decoration: none;
     }
-    .toggle-btn:hover {
+
+    .toggle-btn:hover, .action-button:hover {
         background-color: #0056b3;
     }
+
+    .review-card {
+        background: #f8f9fa;
+        border-left: 5px solid #4CAF50;
+        padding: 12px 16px;
+        border-radius: 6px;
+        margin-bottom: 12px;
+    }
+
+    .review-meta {
+        font-size: 0.9rem;
+        color: #555;
+        margin-bottom: 8px;
+    }
+
     .review-actions {
         margin-top: 5px;
     }
@@ -45,7 +63,7 @@
 
 <hr>
 
-<h3> Uploaded Files</h3>
+<h3>Uploaded Files</h3>
 <ul>
     {% for file in uploaded_files %}
     <li><a href="{{ file.file.url }}" target="_blank">{{ file.file.name }}</a></li>
@@ -56,7 +74,7 @@
 
 <hr>
 
-<h3> Notes Extracted</h3>
+<h3>Notes Extracted</h3>
 {% for file in uploaded_files %}
 <div>
     <button class="toggle-btn" onclick="toggleNotebook('notes-{{ file.id }}')">
@@ -71,12 +89,12 @@
     </div>
 </div>
 {% empty %}
-<p><strong> No extracted notes yet.</strong></p>
+<p><strong>No extracted notes yet.</strong></p>
 {% endfor %}
 
 <hr>
 
-<h3> Flashcards</h3>
+<h3>Flashcards</h3>
 <ul>
     {% for card in flashcards %}
     <li><strong>Q:</strong> {{ card.question }}<br><strong>A:</strong> {{ card.answer }}</li>
@@ -85,7 +103,7 @@
     {% endfor %}
 </ul>
 
-<h3> Quizzes</h3>
+<h3>Quizzes</h3>
 <ul>
     {% for quiz in quizzes %}
     <li><strong>{{ quiz.title }}</strong></li>
@@ -96,7 +114,7 @@
 
 <hr>
 
-<h3> Audio Files</h3>
+<h3>Audio Files</h3>
 <ul>
     {% for audio in session.audio_files.all %}
     <li>
@@ -113,22 +131,20 @@
 
 <hr>
 
-<h3> Reviews</h3>
-{% for review in summaries %}
-<div>
-    <button class="toggle-btn" onclick="toggleNotebook('review-{{ review.id }}')">
-        Show/Hide Review ({{ review.type|default:"No Type" }})
-    </button>
-    <div id="review-{{ review.id }}" style="display:none;" class="notebook-box">
-        {{ review.text }}
-        <div class="review-actions">
-            <a href="{% url 'view_review' review.id %}">🔍 View Full Review & Follow-ups</a>
-        </div>
+<h3>Reviews</h3>
+{% if reviews %}
+{% for review in reviews %}
+<div class="review-card">
+    <div class="review-meta">
+        <strong>Type:</strong> {{ review.type|default:"(No Type)" }}<br>
+        <strong>Created:</strong> {{ review.created_at|date:"M d, Y H:i" }}
     </div>
+    <a href="{% url 'view_review' review.id %}" class="toggle-btn">🔍 View & Continue</a>
 </div>
-{% empty %}
-<p>No reviews yet.</p>
 {% endfor %}
+{% else %}
+<p>No reviews yet.</p>
+{% endif %}
 
 <hr>
 <p><a href="{% url 'dashboard' %}">⬅ Back to Dashboard</a></p>

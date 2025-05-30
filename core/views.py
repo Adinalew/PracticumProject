@@ -174,6 +174,7 @@ def session_detail(request, session_id):
     flashcards = session.flashcards.all()
     quizzes = session.quizzes.all()
     summaries = session.summaries.all().order_by('-created_at')
+    reviews = session.reviews.all().order_by('-created_at')  # ✅ add this line
 
     return render(request, 'core/session_detail.html', {
         'session': session,
@@ -181,9 +182,9 @@ def session_detail(request, session_id):
         'uploaded_files': uploaded_files,
         'flashcards': flashcards,
         'quizzes': quizzes,
-        'summaries': summaries,  # this is what your template uses
+        'summaries': summaries,
+        'reviews': reviews,  # ✅ add this to the context
     })
-
 @login_required
 def delete_session(request, session_id):
     session = get_object_or_404(StudySession, id=session_id, user=request.user)
