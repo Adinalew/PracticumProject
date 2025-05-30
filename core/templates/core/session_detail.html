@@ -1,108 +1,139 @@
 {% extends 'core/base.html' %}
 {% block content %}
-    <style>
-        .notebook-box {
-            background: #fffef0;
-            border: 1px solid #ddd;
-            border-radius: 6px;
-            padding: 15px;
-            margin-top: 10px;
-            font-family: 'Courier New', Courier, monospace;
-            white-space: pre-wrap;
-            line-height: 1.5;
-            box-shadow: 1px 1px 4px rgba(0,0,0,0.1);
-        }
-        .toggle-btn {
-            margin: 10px 0;
-            padding: 6px 12px;
-            font-size: 14px;
-            border: none;
-            background-color: #007bff;
-            color: white;
-            border-radius: 4px;
-            cursor: pointer;
-        }
-        .toggle-btn:hover {
-            background-color: #0056b3;
-        }
-    </style>
+<style>
+    .notebook-box {
+        background: #fffef0;
+        border: 1px solid #ddd;
+        border-radius: 6px;
+        padding: 15px;
+        margin-top: 10px;
+        font-family: 'Courier New', Courier, monospace;
+        white-space: pre-wrap;
+        line-height: 1.5;
+        box-shadow: 1px 1px 4px rgba(0,0,0,0.1);
+    }
+    .toggle-btn {
+        margin: 10px 0;
+        padding: 6px 12px;
+        font-size: 14px;
+        border: none;
+        background-color: #007bff;
+        color: white;
+        border-radius: 4px;
+        cursor: pointer;
+    }
+    .toggle-btn:hover {
+        background-color: #0056b3;
+    }
+</style>
 
-    <h2>{{ session.title }}</h2>
-    <p><strong>Created:</strong> {{ session.created_at|date:"M d, Y H:i" }}</p>
+<h2>{{ session.title }}</h2>
+<p><strong>Created:</strong> {{ session.created_at|date:"M d, Y H:i" }}</p>
 
-    <hr>
+<hr>
 
-    <h3>📎 Uploaded Files</h3>
-    <ul>
-        {% for file in uploaded_files %}
-            <li><a href="{{ file.file.url }}" target="_blank">{{ file.file.name }}</a></li>
-        {% empty %}
-            <li>No files uploaded yet.</li>
-        {% endfor %}
-    </ul>
+<div class="actions">
+    <h3>➕ What would you like to do?</h3>
+    <a href="{% url 'generate_flashcards' session.id %}" class="action-button">🧠 Generate Flashcards</a>
+    <a href="{% url 'quiz_options' session.id %}" class="action-button">🧪 Create a Quiz</a>
+    <a href="{% url 'text_to_speech' session.id %}" class="action-button">🔊 Read Notes Aloud</a>
+    <a href="{% url 'session_review' session.id %}" class="action-button">📄 Create Review</a>
+</div>
 
-    <hr>
+<hr>
 
-    <h3>🔍 Notes Extracted</h3>
+<h3> Uploaded Files</h3>
+<ul>
     {% for file in uploaded_files %}
-        <div>
-            <button class="toggle-btn" onclick="toggleNotebook('notes-{{ file.id }}')">
-                Show text from {{ file.file.name|default:"this file" }}
-            </button>
-            <div id="notes-{{ file.id }}" style="display:none;" class="notebook-box">
-                {% for note in notes %}
-                    {% if note.file.id == file.id %}
-                        {{ note.text }}
-                    {% endif %}
-                {% endfor %}
-            </div>
-        </div>
+    <li><a href="{{ file.file.url }}" target="_blank">{{ file.file.name }}</a></li>
     {% empty %}
-        <p><strong>⚠️ No extracted notes yet.</strong></p>
+    <li>No files uploaded yet.</li>
     {% endfor %}
+</ul>
 
-    <script>
-        function toggleNotebook(id) {
-            const el = document.getElementById(id);
-            if (el.style.display === "none") {
-                el.style.display = "block";
-            } else {
-                el.style.display = "none";
-            }
-        }
-    </script>
+<hr>
 
-    <hr>
-
-    <h3>🧠 Flashcards</h3>
-    <ul>
-        {% for card in flashcards %}
-            <li><strong>Q:</strong> {{ card.question }}<br><strong>A:</strong> {{ card.answer }}</li>
-        {% empty %}
-            <li>No flashcards yet.</li>
+<h3> Notes Extracted</h3>
+{% for file in uploaded_files %}
+<div>
+    <button class="toggle-btn" onclick="toggleNotebook('notes-{{ file.id }}')">
+        Show text from {{ file.file.name|default:"this file" }}
+    </button>
+    <div id="notes-{{ file.id }}" style="display:none;" class="notebook-box">
+        {% for note in notes %}
+        {% if note.file.id == file.id %}
+        {{ note.text }}
+        {% endif %}
         {% endfor %}
-    </ul>
-
-    <h3>📋 Quizzes</h3>
-    <ul>
-        {% for quiz in quizzes %}
-            <li><strong>{{ quiz.title }}</strong></li>
-        {% empty %}
-            <li>No quizzes yet.</li>
-        {% endfor %}
-    </ul>
-
-    <hr>
-
-    <div class="actions">
-        <h3>➕ What would you like to do next?</h3>
-        <a href="{% url 'upload_files_to_session' session.id %}" class="action-button">📤 Upload More Notes</a>
-        <a href="{% url 'generate_flashcards' session.id %}" class="action-button">🧠 Generate Flashcards</a>
-        <a href="{% url 'quiz_options' session.id %}" class="action-button">🧪 Create a Quiz</a>
-        <a href="{% url 'text_to_speech' session.id %}" class="action-button">🔊 Read Notes Aloud</a>
-        <a href="{% url 'session_review' session.id %}" class="action-button">📄 Create Review</a>
     </div>
+</div>
+{% empty %}
+<p><strong> No extracted notes yet.</strong></p>
+{% endfor %}
 
-    <p><a href="{% url 'dashboard' %}">⬅ Back to Dashboard</a></p>
+<script>
+    function toggleNotebook(id) {
+        const el = document.getElementById(id);
+        if (el.style.display === "none") {
+            el.style.display = "block";
+        } else {
+            el.style.display = "none";
+        }
+    }
+</script>
 
-{% endblock %}s
+<hr>
+
+<h3> Flashcards</h3>
+<ul>
+    {% for card in flashcards %}
+    <li><strong>Q:</strong> {{ card.question }}<br><strong>A:</strong> {{ card.answer }}</li>
+    {% empty %}
+    <li>No flashcards yet.</li>
+    {% endfor %}
+</ul>
+
+<h3> Quizzes</h3>
+<ul>
+    {% for quiz in quizzes %}
+    <li><strong>{{ quiz.title }}</strong></li>
+    {% empty %}
+    <li>No quizzes yet.</li>
+    {% endfor %}
+</ul>
+
+<hr>
+
+<h3> Audio Files</h3>
+<ul>
+    {% for audio in session.audio_files.all %}
+    <li>
+        <strong>{{ audio.title|default:"Generated Audio" }}</strong><br>
+        <audio controls>
+            <source src="{{ audio.audio_file.url }}" type="audio/mpeg">
+            Your browser does not support the audio element.
+        </audio>
+    </li>
+    {% empty %}
+    <li>No audio files generated yet.</li>
+    {% endfor %}
+</ul>
+
+<hr>
+
+<h3> Reviews</h3>
+<ul>
+    {% for review in summaries %}
+    <li>
+        <strong>{{ review.title|default:"Untitleurd Review" }}</strong><br>
+        <div class="notebook-box">{{ review.text }}</div>
+    </li>
+    {% empty %}
+    <li>No reviews yet.</li>
+    {% endfor %}
+</ul>
+
+<hr>
+<p><a href="{% url 'dashboard' %}">⬅ Back to Dashboard</a></p>
+
+{% endblock %}

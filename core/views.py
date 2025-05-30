@@ -95,7 +95,7 @@ def start_session_view(request):
                     if extracted_text.strip():
                         ExtractedNote.objects.create(session=session, text=extracted_text, file=uploaded_file)
 
-                return redirect('session_actions', session_id=session.id)
+                return redirect('session_detail', session_id=session.id)
 
         print("Session Form Errors:", session_form.errors)
         print("File Form Errors:", file_form.errors)
@@ -106,28 +106,6 @@ def start_session_view(request):
     return render(request, 'core/start_session.html', {
         'session_form': session_form,
         'file_form': file_form,
-    })
-
-@login_required
-def session_action_view(request, session_id):
-    session = get_object_or_404(StudySession, id=session_id, user=request.user)
-
-    if request.method == 'POST':
-        action = request.POST.get('action')
-        if action == 'quiz':
-            return redirect('generate_quiz', session_id=session.id)
-        elif action == 'flashcards':
-            return redirect('generate_flashcards', session_id=session.id)
-        elif action == 'tts':
-            return redirect('text_to_speech', session_id=session.id)
-        elif action == 'review':
-            return redirect('customize_review', session_id=session.id)  # changed to customization form
-
-    notes = session.extracted_notes.all()
-
-    return render(request, 'core/session_actions.html', {
-        'session': session,
-        'notes': notes,
     })
 
 @login_required
@@ -170,6 +148,18 @@ def upload_files_to_session(request, session_id):
 @login_required
 def session_detail(request, session_id):
     session = get_object_or_404(StudySession, id=session_id, user=request.user)
+
+    if request.method == 'POST':
+        action = request.POST.get('action')
+        if action == 'quiz':
+            return redirect('generate_quiz', session_id=session.id)
+        elif action == 'flashcards':
+            return redirect('generate_flashcards', session_id=session.id)
+        elif action == 'tts':
+            return redirect('text_to_speech', session_id=session.id)
+        elif action == 'review':
+            return redirect('customize_review', session_id=session.id)
+
     notes = session.extracted_notes.all()
     uploaded_files = session.uploaded_files.all()
     flashcards = session.flashcards.all()

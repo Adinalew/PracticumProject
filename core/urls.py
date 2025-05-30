@@ -13,13 +13,11 @@ urlpatterns = [
     path('logout/', views.logout_view, name='logout'),
 
     path('start-session/', views.start_session_view, name='start_session'),
-    path('session-actions/<int:session_id>/', views.session_action_view, name='session_actions'),
     path('session/<int:session_id>/upload/', views.upload_files_to_session, name='upload_files_to_session'),
     path('session/<int:session_id>/flashcards/', generate_flashcards, name='generate_flashcards'),
     path('session/<int:session_id>/tts/', views.text_to_speech, name='text_to_speech'),
     path('session/<int:session_id>/review/', views.session_review, name='session_review'),
-    path('session/<int:session_id>/customize-review/', views.customize_review, name='customize_review'),  # ✅ Add this line
-
+    path('session/<int:session_id>/customize-review/', views.customize_review, name='customize_review'),
     path('sessions/<int:session_id>/', views.session_detail, name='session_detail'),
     path('sessions/<int:session_id>/delete/', views.delete_session, name='delete_session'),
     path('session/<int:session_id>/debug-notes/', views.debug_extracted_notes, name='debug_extracted_notes'),
