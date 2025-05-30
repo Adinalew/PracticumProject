@@ -25,6 +25,9 @@
     .toggle-btn:hover {
         background-color: #0056b3;
     }
+    .review-actions {
+        margin-top: 5px;
+    }
 </style>
 
 <h2>{{ session.title }}</h2>
@@ -37,7 +40,7 @@
     <a href="{% url 'generate_flashcards' session.id %}" class="action-button">🧠 Generate Flashcards</a>
     <a href="{% url 'quiz_options' session.id %}" class="action-button">🧪 Create a Quiz</a>
     <a href="{% url 'text_to_speech' session.id %}" class="action-button">🔊 Read Notes Aloud</a>
-    <a href="{% url 'session_review' session.id %}" class="action-button">📄 Create Review</a>
+    <a href="{% url 'customize_review' session.id %}" class="action-button">📄 Create Review</a>
 </div>
 
 <hr>
@@ -70,17 +73,6 @@
 {% empty %}
 <p><strong> No extracted notes yet.</strong></p>
 {% endfor %}
-
-<script>
-    function toggleNotebook(id) {
-        const el = document.getElementById(id);
-        if (el.style.display === "none") {
-            el.style.display = "block";
-        } else {
-            el.style.display = "none";
-        }
-    }
-</script>
 
 <hr>
 
@@ -122,18 +114,30 @@
 <hr>
 
 <h3> Reviews</h3>
-<ul>
-    {% for review in summaries %}
-    <li>
-        <strong>{{ review.title|default:"Untitleurd Review" }}</strong><br>
-        <div class="notebook-box">{{ review.text }}</div>
-    </li>
-    {% empty %}
-    <li>No reviews yet.</li>
-    {% endfor %}
-</ul>
+{% for review in summaries %}
+<div>
+    <button class="toggle-btn" onclick="toggleNotebook('review-{{ review.id }}')">
+        Show/Hide Review ({{ review.type|default:"No Type" }})
+    </button>
+    <div id="review-{{ review.id }}" style="display:none;" class="notebook-box">
+        {{ review.text }}
+        <div class="review-actions">
+            <a href="{% url 'view_review' review.id %}">🔍 View Full Review & Follow-ups</a>
+        </div>
+    </div>
+</div>
+{% empty %}
+<p>No reviews yet.</p>
+{% endfor %}
 
 <hr>
 <p><a href="{% url 'dashboard' %}">⬅ Back to Dashboard</a></p>
+
+<script>
+    function toggleNotebook(id) {
+        const el = document.getElementById(id);
+        el.style.display = (el.style.display === "none") ? "block" : "none";
+    }
+</script>
 
 {% endblock %}

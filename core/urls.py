@@ -1,9 +1,10 @@
 from . import views
 from django.urls import path
 from django.contrib.auth import views as auth_views
-from .views import home_view, generate_flashcards, text_to_speech
+from .views import home_view, generate_flashcards, text_to_speech, view_review, submit_followup
 from django.conf import settings
 from django.conf.urls.static import static
+
 
 urlpatterns = [
     path('', home_view, name='home'),
@@ -24,6 +25,9 @@ urlpatterns = [
     path('session/<int:session_id>/quiz-options/', views.quiz_options_view, name='quiz_options'),
     path('quiz/<int:quiz_id>/take/', views.take_quiz_view, name='take_quiz'),
     path('quiz-attempt/<int:attempt_id>/results/', views.quiz_results_view, name='quiz_results'),
+    path('reviews/<int:review_id>/', view_review, name='view_review'),
+    path('reviews/<int:review_id>/followup/', submit_followup, name='submit_followup'),
+    path('session/<int:session_id>/reviews/', views.session_reviews, name='session_reviews'),
 ]
 
 if settings.DEBUG:

@@ -1,0 +1,89 @@
+{% extends "core/base.html" %}
+
+{% block content %}
+<style>
+    .reviews-container {
+        max-width: 900px;
+        margin: 40px auto;
+        padding: 25px;
+        background-color: #ffffff;
+        border-radius: 10px;
+        box-shadow: 0 6px 18px rgba(0, 0, 0, 0.08);
+        font-family: 'Segoe UI', sans-serif;
+    }
+
+    .review-box {
+        border-left: 5px solid #4CAF50;
+        background-color: #f8f8f8;
+        padding: 20px;
+        margin-bottom: 25px;
+        border-radius: 6px;
+    }
+
+    .review-title {
+        font-size: 1.2rem;
+        font-weight: bold;
+        margin-bottom: 5px;
+    }
+
+    .review-meta {
+        font-size: 0.9rem;
+        color: #666;
+        margin-bottom: 15px;
+    }
+
+    .review-content {
+        white-space: pre-wrap;
+        font-size: 1rem;
+        line-height: 1.6;
+        margin-bottom: 10px;
+    }
+
+    .btn-followup {
+        display: inline-block;
+        margin-top: 5px;
+        padding: 8px 14px;
+        background-color: #007bff;
+        color: white;
+        border-radius: 5px;
+        text-decoration: none;
+        font-size: 0.95rem;
+    }
+
+    .btn-followup:hover {
+        background-color: #0056b3;
+    }
+
+    .back-link {
+        display: inline-block;
+        margin-top: 30px;
+        text-decoration: none;
+        color: #4CAF50;
+        font-weight: bold;
+    }
+</style>
+
+<div class="reviews-container">
+    <h2>📝 All Reviews for <em>{{ session.title }}</em></h2>
+    <p><small>Created: {{ session.created_at|date:"F j, Y, g:i a" }}</small></p>
+
+    {% for review in reviews %}
+    <div class="review-box">
+        <div class="review-title">
+            Review ({{ review.type|default:"No Type" }})
+        </div>
+        <div class="review-meta">
+            {{ review.created_at|date:"M d, Y H:i" }} | Type: {{ review.type|default:"N/A" }}
+        </div>
+        <div class="review-content">
+            {{ review.content|linebreaks }}
+        </div>
+        <a href="{% url 'view_review' review.id %}" class="btn-followup">➕ View + Ask Follow-Up</a>
+    </div>
+    {% empty %}
+    <p>No reviews yet for this session.</p>
+    {% endfor %}
+
+    <a href="{% url 'session_detail' session.id %}" class="back-link">← Back to Session</a>
+</div>
+{% endblock %}

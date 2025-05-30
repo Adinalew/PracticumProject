@@ -1,0 +1,160 @@
+{% extends "core/base.html" %}
+{% block content %}
+<style>
+  .review-container {
+    max-width: 800px;
+    margin: 30px auto;
+    padding: 25px;
+    background-color: #ffffff;
+    border-radius: 10px;
+    box-shadow: 0 6px 16px rgba(0, 0, 0, 0.08);
+    font-family: 'Segoe UI', sans-serif;
+  }
+
+  .review-header {
+    margin-bottom: 20px;
+  }
+
+  .review-type {
+    font-size: 1.3rem;
+    font-weight: bold;
+  }
+
+  .review-date {
+    font-size: 0.9rem;
+    color: #777;
+  }
+
+  .review-content {
+    margin-top: 20px;
+    white-space: pre-wrap;
+    font-size: 1.1rem;
+    line-height: 1.6;
+  }
+
+  .followup-section {
+    margin-top: 40px;
+  }
+
+  .followup-card {
+    background-color: #f9f9f9;
+    padding: 15px;
+    border-left: 4px solid #007bff;
+    border-radius: 6px;
+    margin-bottom: 15px;
+  }
+
+  .followup-q {
+    font-weight: bold;
+  }
+
+  .followup-a {
+    margin-top: 5px;
+    white-space: pre-wrap;
+  }
+
+  .followup-form textarea {
+    width: 100%;
+    height: 80px;
+    padding: 8px;
+    font-size: 1rem;
+    margin-bottom: 10px;
+  }
+
+  .followup-form button {
+    background-color: #007bff;
+    color: white;
+    border: none;
+    padding: 8px 16px;
+    font-size: 1rem;
+    border-radius: 4px;
+  }
+
+  .followup-form button:hover {
+    background-color: #0056b3;
+  }
+
+  .back-link {
+    display: inline-block;
+    margin-top: 25px;
+    text-decoration: none;
+    color: #4CAF50;
+    font-weight: bold;
+  }
+</style>
+
+<div class="review-container">
+  <div class="review-header">
+    <div class="review-type">{{ review.type|default:"Review" }}</div>
+    <div class="review-date">Created: {{ review.created_at|date:"F j, Y, g:i a" }}</div>
+  </div>
+
+  <div class="review-content">
+    {{ review.content|linebreaks }}
+  </div>
+
+  <div class="followup-section">
+    <h3>💬 Follow-Up Questions</h3>
+
+    <div id="followupList">
+      {% for item in followups %}
+      <div class="followup-card">
+        <div class="followup-q">Q: {{ item.question }}</div>
+        <div class="followup-a">A: {{ item.answer }}</div>
+      </div>
+      {% empty %}
+      <p>No follow-up questions yet.</p>
+      {% endfor %}
+    </div>
+
+    <form method="post" class="followup-form" id="followupForm">
+      {% csrf_token %}
+      {{ form.as_p }}
+      <button type="submit">Ask Follow-Up</button>
+    </form>
+  </div>
+
+  <a href="{% url 'session_reviews' session.id %}" class="back-link">← Back to All Reviews</a>
+</div>
+
+<script>
+  document.getElementById('followupForm').addEventListener('submit', async function(event) {
+    event.preventDefault();
+
+    const form = event.target;
+    const formData = new FormData(form);
+    const csrfToken = form.querySelector('[name="csrfmiddlewaretoken"]').value;
+
+    const followupList = document.getElementById('followupList');
+    const tempCard = document.createElement('div');
+    tempCard.className = 'followup-card';
+    tempCard.innerHTML = `
+    <div class="followup-q">Q: ${formData.get('question')}</div>
+    <div class="followup-a"><em>Thinking...</em></div>
+  `;
+    followupList.prepend(tempCard);
+
+    try {
+      const response = await fetch("{% url 'submit_followup' review.id %}", {
+        method: "POST",
+        headers: {
+          "X-CSRFToken": csrfToken,
+        },
+        body: formData,
+      });
+
+      const data = await response.json();
+      if (data.error) {
+        tempCard.querySelector('.followup-a').innerHTML = `<span style="color:red;">${data.error}</span>`;
+      } else {
+        tempCard.querySelector('.followup-q').innerText = `Q: ${data.question}`;
+        tempCard.querySelector('.followup-a').innerText = `A: ${data.answer}`;
+      }
+
+      form.reset();
+    } catch (err) {
+      tempCard.querySelector('.followup-a').innerHTML = `<span style="color:red;">Something went wrong.</span>`;
+    }
+  });
+</script>
+{% endblock %}

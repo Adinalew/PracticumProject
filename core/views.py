@@ -5,9 +5,16 @@ from django.contrib.auth import logout
 from django.contrib import messages
 from django.http import HttpResponse
 from django import forms
-
+from .models import StudyReview, FollowUp
+from django.forms import ModelForm, Textarea
+from django.views.decorators.http import require_POST
 from .forms import StudySessionForm, MultiFileUploadForm
 from .models import StudySession, UploadedFile, ExtractedNote
+from .models import FollowUp
+from .forms import FollowUpForm
+from .utils import generate_study_review
+from .utils import generate_followup_response
+from django.http import JsonResponse
 
 from .utils import (
     extract_text_from_uploaded_file,
@@ -46,6 +53,7 @@ class ReviewCustomizationForm(forms.Form):
     review_depth = forms.ChoiceField(choices=DEPTH_CHOICES, label="Depth of Review")
     selected_files = forms.MultipleChoiceField(widget=forms.CheckboxSelectMultiple, required=False)
     additional_notes = forms.CharField(widget=forms.Textarea, required=False)
+
 
 
 def home_view(request):
@@ -145,6 +153,7 @@ def upload_files_to_session(request, session_id):
         'uploaded_files': uploaded_files
     })
 
+# ✨ Update session_detail to show reviews
 @login_required
 def session_detail(request, session_id):
     session = get_object_or_404(StudySession, id=session_id, user=request.user)
@@ -164,7 +173,7 @@ def session_detail(request, session_id):
     uploaded_files = session.uploaded_files.all()
     flashcards = session.flashcards.all()
     quizzes = session.quizzes.all()
-    summaries = session.summaries.all()
+    summaries = session.summaries.all().order_by('-created_at')
 
     return render(request, 'core/session_detail.html', {
         'session': session,
@@ -172,7 +181,7 @@ def session_detail(request, session_id):
         'uploaded_files': uploaded_files,
         'flashcards': flashcards,
         'quizzes': quizzes,
-        'summaries': summaries,
+        'summaries': summaries,  # this is what your template uses
     })
 
 @login_required
@@ -227,7 +236,6 @@ def customize_review(request, session_id):
         'session': session,
     })
 
-# ✨ UPDATED: Reads from user-provided customization
 @login_required
 def session_review(request, session_id):
     session = get_object_or_404(StudySession, id=session_id, user=request.user)
@@ -251,10 +259,41 @@ def session_review(request, session_id):
         print(f"Error generating study review: {e}")
         return HttpResponse("An error occurred while generating the review.", status=500)
 
-    return render(request, 'core/session_review.html', {
-        'session': session,
-        'review_text': review_text,
-    })
+    # Save review to DB
+    review = StudyReview.objects.create(
+        session=session,
+        type=options.get('review_depth'),
+        content=review_text
+    )
+    # Clear review options so they don't affect future sessions
+    del request.session['review_options']
+
+    # ✅ Redirect to the newly created review page
+    return redirect('view_review', review_id=review.id)
+
+# ✨ New view to submit follow-up Qs
+@login_required
+@require_POST
+def submit_followup(request, review_id):
+    review = get_object_or_404(StudyReview, id=review_id, session__user=request.user)
+    form = FollowUpForm(request.POST)
+    if form.is_valid():
+        question = form.cleaned_data['question']
+        options = request.session.get('review_options')
+        try:
+            answer = generate_followup_response(question, review.content, options)
+        except Exception as e:
+            answer = "There was an error generating an answer."
+
+        followup = FollowUp.objects.create(review=review, question=question, answer=answer)
+
+        # Return JSON instead of redirect
+        return JsonResponse({
+            "question": followup.question,
+            "answer": followup.answer
+        })
+
+    return JsonResponse({"error": "Invalid form submission"}, status=400)
 
 @login_required
 def debug_extracted_notes(request, session_id):
@@ -349,4 +388,49 @@ def quiz_results_view(request, attempt_id):
     return render(request, 'core/quiz_results.html', {
         'attempt': attempt,
         'user_answers': user_answers,
+    })
+
+@login_required
+def view_review(request, review_id):
+    review = get_object_or_404(StudyReview, id=review_id)
+    session = review.session
+    followups = review.followups.all().order_by('-created_at')
+
+    if request.method == 'POST':
+        form = FollowUpForm(request.POST)
+        if form.is_valid():
+            followup = form.save(commit=False)
+            followup.review = review
+
+            options = request.session.get('review_options')  # might be None if expired
+            try:
+                followup.answer = generate_followup_response(
+                    followup.question,
+                    review.content,
+                    options
+                )
+            except Exception as e:
+                print(f"❌ Error generating follow-up: {e}")
+                followup.answer = "There was an error generating an answer."
+
+            followup.save()
+            return redirect('view_review', review_id=review.id)
+    else:
+        form = FollowUpForm()
+
+    return render(request, 'core/view_review.html', {
+        'review': review,
+        'session': session,
+        'form': form,
+        'followups': followups,
+    })
+
+@login_required
+def session_reviews(request, session_id):
+    session = get_object_or_404(StudySession, id=session_id, user=request.user)
+    reviews = session.reviews.all().order_by('-created_at')
+
+    return render(request, 'core/session_reviews.html', {
+        'session': session,
+        'reviews': reviews,
     })

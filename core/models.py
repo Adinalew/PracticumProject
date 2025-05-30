@@ -87,3 +87,21 @@ class UserAnswer(models.Model):
     question = models.ForeignKey(Question, on_delete=models.CASCADE)
     answer = models.JSONField()  # user submitted answer (string/list/dict)
     is_correct = models.BooleanField()
+
+class StudyReview(models.Model):
+    session = models.ForeignKey(StudySession, related_name='reviews', on_delete=models.CASCADE)
+    content = models.TextField()
+    created_at = models.DateTimeField(auto_now_add=True)
+    type = models.CharField(max_length=100, blank=True)  # e.g., Crash Course, Extensive, etc.
+
+    def __str__(self):
+        return f"Review ({self.type}) for Session {self.session.id}"
+
+class FollowUp(models.Model):
+    review = models.ForeignKey(StudyReview, related_name='followups', on_delete=models.CASCADE)
+    question = models.TextField()
+    answer = models.TextField()
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    def __str__(self):
+        return f"Q: {self.question[:30]}..."

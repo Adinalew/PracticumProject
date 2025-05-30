@@ -159,3 +159,36 @@ def generate_study_review(text, options=None):
     except OpenAIError as e:
         print(f"❌ OpenAI API error: {e}")
         return "An error occurred while generating the study review."
+
+def generate_followup_response(question, previous_review, options=None):
+    api_key = os.getenv("OPENAI_API_KEY")
+    cert_path = "C:/certificate/2023 techloq bundle certificate.crt"
+
+    if os.path.exists(cert_path):
+        http_client = httpx.Client(verify=cert_path)
+    else:
+        http_client = httpx.Client()
+
+    client = OpenAI(api_key=api_key, http_client=http_client)
+
+    style = options.get('explanation_style', 'normal') if options else 'normal'
+
+    prompt = (
+        f"You are a helpful tutor. Based on the study material below, respond to the user's follow-up question.\n"
+        f"Make sure to answer in the appropriate tone. Explanation style: {style}.\n\n"
+        f"Study Material:\n{previous_review}\n\n"
+        f"Follow-up Question:\n{question}"
+    )
+
+    try:
+        response = client.chat.completions.create(
+            model="gpt-4o",
+            messages=[
+                {"role": "system", "content": "You are a kind, helpful tutor."},
+                {"role": "user", "content": prompt}
+            ]
+        )
+        return response.choices[0].message.content.strip()
+    except OpenAIError as e:
+        print(f"Error generating follow-up: {e}")
+        return "Sorry, something went wrong while generating your answer."

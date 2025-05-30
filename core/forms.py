@@ -1,5 +1,5 @@
 from django import forms
-from .models import StudySession
+from .models import StudySession, StudyReview, FollowUp
 
 class MultiFileInput(forms.ClearableFileInput):
     allow_multiple_selected = True
@@ -31,3 +31,31 @@ class QuizOptionsForm(forms.Form):
         required=True,
         label="Select question types to include"
     )
+
+# NEW FORM FOR REVIEW GENERATION
+REVIEW_TYPE_CHOICES = [
+    ('Crash Course', 'Crash Course'),
+    ('Extensive', 'Extensive Review'),
+    ('Beginner-Friendly', 'Beginner-Friendly'),
+    ('Q&A Style', 'Q&A Style'),
+    ('Summary Only', 'Summary Only'),
+]
+
+class StudyReviewForm(forms.ModelForm):
+    type = forms.ChoiceField(choices=REVIEW_TYPE_CHOICES, required=False, label="Review Type")
+
+    class Meta:
+        model = StudyReview
+        fields = ['type', 'content']
+        widgets = {
+            'content': forms.Textarea(attrs={'placeholder': 'AI will generate content...'})
+        }
+
+# NEW FORM FOR FOLLOW-UP QUESTIONS
+class FollowUpForm(forms.ModelForm):
+    class Meta:
+        model = FollowUp
+        fields = ['question']
+        widgets = {
+            'question': forms.Textarea(attrs={'placeholder': 'Ask a follow-up question...'})
+        }
