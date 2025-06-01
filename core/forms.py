@@ -1,14 +1,23 @@
 from django import forms
 from .models import StudySession, StudyReview, FollowUp
 
+
+
 class MultiFileInput(forms.ClearableFileInput):
     allow_multiple_selected = True
+
 
 class MultiFileUploadForm(forms.Form):
     files = forms.FileField(
         widget=MultiFileInput(attrs={'multiple': True}),
-        required=False
+        required=True
     )
+
+    def clean_files(self):
+        files = self.data.getlist('files')  # Correctly access uploaded files
+        if not files:
+            raise forms.ValidationError("No files were submitted.")
+        return files
 
 class StudySessionForm(forms.ModelForm):
     class Meta:
