@@ -26,10 +26,16 @@ QUESTION_TYPE_CHOICES = [
 
 class QuizOptionsForm(forms.Form):
     qtypes = forms.MultipleChoiceField(
-        choices=QUESTION_TYPE_CHOICES,
+        choices=[
+            ('mc', 'Multiple Choice'),
+            ('tf', 'True/False'),
+            ('fib', 'Fill in the Blank'),
+            ('short', 'Short Answer'),
+            ('long', 'Long Answer'),
+            ('match', 'Matching'),
+        ],
         widget=forms.CheckboxSelectMultiple,
-        required=True,
-        label="Select question types to include"
+        required=True
     )
 
 # NEW FORM FOR REVIEW GENERATION

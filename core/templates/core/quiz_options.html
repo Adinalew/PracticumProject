@@ -12,7 +12,8 @@
 
 <form method="post">
     {% csrf_token %}
-    {{ form.as_p }}
+    {{ form.qtypes.errors }}
+    {{ form.qtypes }}
     <button type="submit">Generate Quiz</button>
 </form>
 

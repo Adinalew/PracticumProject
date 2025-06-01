@@ -1,40 +1,17 @@
-from django.shortcuts import render, redirect, get_object_or_404
-from django.contrib.auth.forms import UserCreationForm
-from django.contrib.auth.decorators import login_required
-from django.contrib.auth import logout
-from django.contrib import messages
-from django.http import HttpResponse, HttpResponseRedirect
+import json, openai
 from django import forms
-from django.urls import reverse
-from .models import NoteAudio, ExtractedNote
-from .utils import generate_note_audio
-from .models import StudyReview, FollowUp
-from django.forms import ModelForm, Textarea
+from django.conf import settings
+from django.contrib import messages
+from django.contrib.auth import logout
+from django.contrib.auth.decorators import login_required
+from django.contrib.auth.forms import UserCreationForm
+from django.http import HttpResponse, JsonResponse
+from django.shortcuts import render, redirect, get_object_or_404
 from django.views.decorators.http import require_POST
-from .forms import StudySessionForm, MultiFileUploadForm
-from .models import StudySession, UploadedFile, ExtractedNote
-from .models import FollowUp, Flashcard, FlashcardSet
-from .forms import FollowUpForm, FlashcardCustomizationForm
-from .utils import generate_study_review
-from .utils import generate_followup_response
-from django.http import JsonResponse
-from .utils import get_text_from_session, generate_flashcards_from_text
-from .utils import generate_flashcards_from_text
-
-
-from .utils import (
-    extract_text_from_uploaded_file,
-    extract_text_from_file,
-    extract_text_from_image,
-    extract_text_from_pdf,
-    generate_tts_audio,
-    get_text_from_session,
-    generate_study_review,
-)
-
-from .models import StudySession, Quiz, Question, QuizAttempt, UserAnswer
-from .forms import QuizOptionsForm
-import json
+from .forms import StudySessionForm, MultiFileUploadForm, FollowUpForm, FlashcardCustomizationForm, QuizOptionsForm, ModelForm, Textarea
+from .models import StudySession, UploadedFile, ExtractedNote, StudyReview, FollowUp, Flashcard, FlashcardSet, Quiz, Question, QuizAttempt, UserAnswer
+from .utils import extract_text_from_uploaded_file, extract_text_from_file, extract_text_from_image, extract_text_from_pdf, generate_flashcards_from_text, generate_study_review, generate_followup_response, generate_tts_audio, get_text_from_session, generate_note_audio
+QUESTION_TYPE_KEYS = {'mc', 'tf', 'match', 'long', 'fib', 'short'}
 
 # ✨ New form for customizing the AI-generated review
 class ReviewCustomizationForm(forms.Form):
@@ -59,8 +36,6 @@ class ReviewCustomizationForm(forms.Form):
     review_depth = forms.ChoiceField(choices=DEPTH_CHOICES, label="Depth of Review")
     selected_files = forms.MultipleChoiceField(widget=forms.CheckboxSelectMultiple, required=False)
     additional_notes = forms.CharField(widget=forms.Textarea, required=False)
-
-
 
 def home_view(request):
     return render(request, 'home.html')
@@ -159,7 +134,6 @@ def upload_files_to_session(request, session_id):
         'uploaded_files': uploaded_files
     })
 
-
 @login_required
 def session_detail(request, session_id):
     session = get_object_or_404(StudySession, id=session_id, user=request.user)
@@ -208,7 +182,6 @@ def edit_session_title(request, session_id):
         return redirect(next_url)
     return redirect('dashboard')
 
-
 @login_required
 def view_flashcard_set(request, set_id):
     flashcard_set = get_object_or_404(FlashcardSet, id=set_id, session__user=request.user)
@@ -225,7 +198,6 @@ def delete_session(request, session_id):
     session.delete()
     messages.success(request, "Session deleted successfully.")
     return redirect('dashboard')
-
 
 @login_required
 def generate_flashcards(request, session_id):
@@ -292,6 +264,7 @@ def flashcard_set_detail(request, session_id, set_name):
         },
         'flashcards': flashcards,
     })
+
 @login_required
 def text_to_speech(request, session_id):
     session = get_object_or_404(StudySession, id=session_id, user=request.user)
@@ -411,21 +384,117 @@ def quiz_options_view(request, session_id):
     if request.method == 'POST':
         form = QuizOptionsForm(request.POST)
         if form.is_valid():
+            print("Form is valid")
             qtypes = form.cleaned_data['qtypes']
+            session_text = get_combined_session_text(session)
 
-            # TODO: Call OpenAI API here with qtypes and session content to generate questions.
-            # For now, create an empty Quiz for demonstration:
-            quiz = Quiz.objects.create(session=session)
+            if not session_text.strip():
+                messages.error(request, "No study material found for this session.")
+                return redirect('quiz_options', session_id=session.id)
 
-            # You should parse OpenAI response and save Question objects here.
-            # Example placeholder:
-            # Question.objects.create(quiz=quiz, question_type='mc', text='Example question?', options=['A', 'B', 'C'], correct_answer='A')
+            quiz = Quiz.objects.create(session=session, user=request.user)
+            questions_data = generate_quiz_questions(session_text, qtypes)
+            print("Returned from OpenAI:", questions_data)
+
+            if not questions_data:
+                messages.error(request, "Failed to generate questions. Try again later.")
+                quiz.delete()
+                return redirect('quiz_options', session_id=session.id)
+
+            for q in questions_data:
+                Question.objects.create(
+                    quiz=quiz,
+                    question_type=q['type'],
+                    text=q['text'],
+                    options=q.get('options', None),
+                    correct_answer=q['correct_answer'],
+                    explanation=q.get('explanation', '')
+                )
 
             return redirect('take_quiz', quiz_id=quiz.id)
+
+        else:
+            print("Form errors:", form.errors)
     else:
         form = QuizOptionsForm()
 
-    return render(request, 'core/quiz_options.html', {'form': form, 'session': session})
+    return render(request, 'core/quiz_options.html', {
+        'form': form,
+        'session': session
+    })
+
+def generate_quiz_questions(text, qtypes):
+    prompt = f"""
+    Based on the following study material, generate 1 question of each of the following types: {', '.join(qtypes)}.
+    
+    Study material:
+    {text}
+    
+    Provide output in this JSON format:
+    [
+      {{
+        "type": "mc",
+        "text": "What is X?",
+        "options": ["A", "B", "C", "D"],
+        "correct_answer": "A",
+        "explanation": "A is correct because..."
+      }},
+      ...
+    ]
+    Only return valid JSON.
+    """
+
+    try:
+        openai.api_key = settings.OPENAI_API_KEY
+
+        response = openai.chat.completions.create(
+            model="gpt-4",
+            messages=[{"role": "user", "content": prompt}],
+            temperature=0.7,
+        )
+
+        result = response.choices[0].message.content
+        print("OpenAI raw response:", result)
+
+        questions = json.loads(result)
+        print("Parsed questions:", questions)
+
+        valid_questions = []
+        for q in questions:
+            if q.get("type") in QUESTION_TYPE_KEYS and q.get("text") and q.get("correct_answer"):
+                valid_questions.append(q)
+            else:
+                print("Invalid question skipped:", q)
+
+        if not valid_questions:
+            print("No valid questions generated.")
+        print("Valid questions:", valid_questions)
+        return valid_questions
+
+    except json.JSONDecodeError as json_err:
+        print("JSON decoding error:", json_err)
+        print("Response content was:", result)
+        return []
+
+    except Exception as e:
+        print("OpenAI API or other error:", e)
+        return []
+
+def get_combined_session_text(session):
+    texts = []
+
+    # Use ExtractedNote model which stores all extracted notes linked to the session
+    extracted_notes = session.extracted_notes.all()
+
+    if extracted_notes.exists():
+        for note in extracted_notes:
+            print("Notes were extracted")
+            texts.append(note.text)
+    else:
+        print("No extracted notes found for this session.")
+
+    combined = "\n".join(texts)
+    return combined
 
 @login_required
 def take_quiz_view(request, quiz_id):
