@@ -196,12 +196,6 @@
 <div class="container">
     <h1>Flashcards for {{ session.title }}</h1>
 
-    {% if messages %}
-    {% for message in messages %}
-    <div class="message">{{ message }}</div>
-    {% endfor %}
-    {% endif %}
-
     {% if flashcards %}
     <div class="top-bar">
         <button class="toggle-btn" onclick="toggleView()">Switch to Single View</button>
