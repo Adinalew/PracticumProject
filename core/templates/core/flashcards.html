@@ -115,11 +115,16 @@
             backface-visibility: hidden;
             border-radius: 10px;
             box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            overflow-y: auto;
+            padding: 20px;
+            font-size: 1rem;
+            text-align: center;
+            word-wrap: break-word;
+            line-height: 1.4;
             display: flex;
-            align-items: center;
             justify-content: center;
-            padding: 30px;
-            font-size: 1.1rem;
+            align-items: center;
+            flex-direction: column;
         }
 
         .flashcard-front {
@@ -132,6 +137,17 @@
             background-color: #f0f0f0;
             transform: rotateY(180deg);
             color: #555;
+        }
+
+        .flashcard-front::-webkit-scrollbar,
+        .flashcard-back::-webkit-scrollbar {
+            width: 6px;
+        }
+
+        .flashcard-front::-webkit-scrollbar-thumb,
+        .flashcard-back::-webkit-scrollbar-thumb {
+            background-color: rgba(0, 0, 0, 0.2);
+            border-radius: 4px;
         }
 
         .flashcard:hover .flashcard-inner,
@@ -309,7 +325,7 @@
         }
     }
 
-    // ✅ Auto-hide messages after 2.5 seconds
+    // Auto-hide flashcard messages after 2.5 seconds
     setTimeout(() => {
         const container = document.getElementById('message-container');
         if (container) {

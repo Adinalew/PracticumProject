@@ -46,9 +46,62 @@
     .review-actions {
         margin-top: 5px;
     }
+
+    .session-title-container {
+        position: relative;
+        display: inline-block;
+        margin-bottom: 10px;
+    }
+
+    .session-title-text {
+        font-size: 1.7rem;
+        font-weight: bold;
+        cursor: pointer;
+        padding: 2px 4px;
+        border-radius: 4px;
+    }
+
+    .session-title-text:hover {
+        background-color: #e6f0ff;
+    }
+
+    .edit-session-title-form {
+        display: none;
+        margin-top: 5px;
+    }
+
+    .edit-session-title-form input[type="text"] {
+        font-size: 1.5rem;
+        padding: 4px 8px;
+        border: 1px solid #ccc;
+        border-radius: 4px;
+        width: 280px;
+    }
+
+    .edit-session-title-form button {
+        padding: 4px 10px;
+        font-size: 1rem;
+        border: none;
+        background-color: #4CAF50;
+        color: white;
+        border-radius: 4px;
+        margin-left: 5px;
+    }
+
+    .edit-session-title-form button:hover {
+        background-color: #3c9741;
+    }
 </style>
 
-<h2>{{ session.title }}</h2>
+<div class="session-title-container">
+    <div id="sessionTitle" class="session-title-text" onclick="toggleTitleEdit()">{{ session.title }}</div>
+    <form id="editTitleForm" class="edit-session-title-form" method="post" action="{% url 'edit_session_title' session.id %}?next={{ request.path }}">
+        {% csrf_token %}
+        <input type="text" name="title" value="{{ session.title }}">
+        <button type="submit">💾</button>
+    </form>
+</div>
+
 <p><strong>Created:</strong> {{ session.created_at|date:"M d, Y H:i" }}</p>
 
 <hr>
@@ -160,6 +213,10 @@
         const el = document.getElementById(id);
         el.style.display = (el.style.display === "none") ? "block" : "none";
     }
-</script>
 
+    function toggleTitleEdit() {
+        document.getElementById('sessionTitle').style.display = 'none';
+        document.getElementById('editTitleForm').style.display = 'inline-block';
+    }
+</script>
 {% endblock %}

@@ -3,8 +3,10 @@ from django.contrib.auth.forms import UserCreationForm
 from django.contrib.auth.decorators import login_required
 from django.contrib.auth import logout
 from django.contrib import messages
-from django.http import HttpResponse
+from django.http import HttpResponse, HttpResponseRedirect
 from django import forms
+from django.urls import reverse
+
 from .models import StudyReview, FollowUp
 from django.forms import ModelForm, Textarea
 from django.views.decorators.http import require_POST
@@ -188,6 +190,24 @@ def session_detail(request, session_id):
         'summaries': summaries,
         'reviews': reviews,
     })
+
+@require_POST
+@login_required
+def edit_session_title(request, session_id):
+    session = get_object_or_404(StudySession, id=session_id, user=request.user)
+    if request.method == 'POST':
+        new_title = request.POST.get('title')
+        if new_title:
+            session.title = new_title
+            session.save()
+
+    # Check if there's a "next" parameter (for redirecting back to current page)
+    next_url = request.GET.get('next')
+    if next_url:
+        return redirect(next_url)
+    return redirect('dashboard')
+
+
 @login_required
 def view_flashcard_set(request, set_id):
     flashcard_set = get_object_or_404(FlashcardSet, id=set_id, session__user=request.user)
