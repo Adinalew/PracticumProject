@@ -14,6 +14,7 @@
     <p>Correct answer: {{ ua.question.correct_answer }}</p>
     <p>{% if ua.is_correct %}Correct!{% else %}Incorrect.{% endif %}</p>
 {% endfor %}
+    <a href="{% url 'dashboard' %}" class="back-btn">Back to Dashboard</a>
 </div>
 </body>
 </html>

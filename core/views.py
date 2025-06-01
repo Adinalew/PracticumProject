@@ -9,43 +9,12 @@ from django.contrib.auth.forms import UserCreationForm
 from django.http import HttpResponse, JsonResponse
 from django.shortcuts import render, redirect, get_object_or_404
 from django.views.decorators.http import require_POST
-
-from .forms import (
-    StudySessionForm,
-    MultiFileUploadForm,
-    FollowUpForm,
-    FlashcardCustomizationForm,
-    QuizOptionsForm,
-    ModelForm,
-    Textarea
-)
-from .models import (
-    StudySession,
-    UploadedFile,
-    ExtractedNote,
-    StudyReview,
-    FollowUp,
-    Flashcard,
-    FlashcardSet,
-    Quiz,
-    Question,
-    QuizAttempt,
-    UserAnswer
-)
-from .utils import (
-    extract_text_from_uploaded_file,
-    extract_text_from_file,
-    extract_text_from_image,
-    extract_text_from_pdf,
-    extract_handwriting_from_pdf,
-    generate_flashcards_from_text,
-    generate_study_review,
-    generate_followup_response,
-    generate_tts_audio,
-    get_text_from_session,
-    generate_note_audio
-)
-
+from .forms import StudySessionForm, MultiFileUploadForm, FollowUpForm, FlashcardCustomizationForm, QuizOptionsForm
+from .models import (StudySession, UploadedFile, ExtractedNote, StudyReview, FollowUp, Flashcard, FlashcardSet,
+                     Quiz, Question, QuizAttempt, UserAnswer)
+from .utils import (extract_text_from_uploaded_file, extract_text_from_file, extract_text_from_image,
+                    extract_text_from_pdf, generate_flashcards_from_text, generate_study_review,
+                    generate_followup_response, generate_tts_audio, get_text_from_session, generate_note_audio)
 QUESTION_TYPE_KEYS = {'mc', 'tf', 'match', 'long', 'fib', 'short'}
 
 # ✨ New form for customizing the AI-generated review
@@ -216,7 +185,7 @@ def session_detail(request, session_id):
     notes = session.extracted_notes.all()
     uploaded_files = session.uploaded_files.all()
     flashcard_sets = session.flashcard_sets.all().order_by('-created_at')
-    quizzes = session.quizzes.all()
+    quizzes = Quiz.objects.filter(session=session, user=request.user).order_by('-score')  # Highest score first
     summaries = session.summaries.all().order_by('-created_at')
     reviews = session.reviews.all().order_by('-created_at')
 
@@ -489,7 +458,7 @@ def quiz_options_view(request, session_id):
 
 def generate_quiz_questions(text, qtypes):
     prompt = f"""
-    Based on the following study material, generate 1 question of each of the following types: {', '.join(qtypes)}.
+    Based on the following study material, generate 5 questions of each of the following types: {', '.join(qtypes)}.
     
     Study material:
     {text}
@@ -505,6 +474,20 @@ def generate_quiz_questions(text, qtypes):
       }},
       ...
     ]
+    
+    For matching questions, return a list like:
+    Match the term with its correct definition:
+
+    Terms:
+    - Term1
+    - Term2
+    - Term3
+
+    Definitions:
+    - Def1
+    - Def2
+    - Def3
+
     Only return valid JSON.
     """
 
@@ -601,13 +584,46 @@ def take_quiz_view(request, quiz_id):
             if is_correct:
                 correct_count += 1
 
-        score = (correct_count / total_questions) * 100 if total_questions else 0
+        score = int((correct_count / total_questions) * 100) if total_questions else 0
         attempt.score = score
         attempt.save()
 
         return redirect('quiz_results', attempt_id=attempt.id)
 
     return render(request, 'core/take_quiz.html', {'quiz': quiz, 'questions': questions})
+
+def submit_quiz_view(request, quiz_id):
+    quiz = get_object_or_404(Quiz, id=quiz_id, user=request.user)
+    questions = quiz.question_set.all()
+
+    score = 0
+    for question in questions:
+        user_answer = request.POST.get(f'question_{question.id}')
+        if user_answer == question.correct_answer:
+            score += 1
+
+    total_questions = questions.count()
+
+    if total_questions == 0:
+        percentage = 0
+    else:
+        percentage = round((score / total_questions) * 100)
+
+    # Save only if better or if no score
+    if quiz.score is None or percentage > quiz.score:
+        quiz.score = percentage
+        quiz.save()
+
+    percentage = int((score / total_questions) * 100) if total_questions > 0 else 0
+    if quiz.score is None or percentage > quiz.score:
+        quiz.score = percentage
+        quiz.save()
+
+    return render(request, 'core/quiz_results.html', {
+        'quiz': quiz,
+        'score': percentage,
+        'questions': questions,
+    })
 
 @login_required
 def quiz_results_view(request, attempt_id):

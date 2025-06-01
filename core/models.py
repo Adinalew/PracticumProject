@@ -36,11 +36,11 @@ class Flashcard(models.Model):
     def __str__(self):
         return f"{self.question[:30]}..."
 
-
 class Quiz(models.Model):
     session = models.ForeignKey(StudySession, on_delete=models.CASCADE, related_name="quizzes")
     user = models.ForeignKey(User, on_delete=models.CASCADE, related_name="quizzes", null=True, blank=True)
     created_at = models.DateTimeField(auto_now_add=True)
+    score = models.FloatField(default=0.0)
 
     def __str__(self):
         return f"{self.user[:50]}..."

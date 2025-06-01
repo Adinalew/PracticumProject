@@ -18,10 +18,10 @@ from django.conf import settings
 import uuid
 from pdf2image import convert_from_bytes
 
-
 # Hardcoded path to poppler bin
 os.environ["PATH"] += os.pathsep + r"C:\poppler\poppler-24.08.0\Library\bin"
 
+import json
 
 # Load environment variables
 load_dotenv()
@@ -347,3 +347,4 @@ def extract_handwriting_from_pdf(file):
     except Exception as e:
         print(f"Error in handwriting PDF OCR: {e}")
         return ""
+
