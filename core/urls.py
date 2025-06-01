@@ -30,6 +30,7 @@ urlpatterns = [
     path('session/<int:session_id>/reviews/', views.session_reviews, name='session_reviews'),
     path('session/<int:session_id>/flashcards/<str:set_name>/', views.flashcard_set_detail, name='flashcard_set_detail'),
     path('flashcards/<int:set_id>/', view_flashcard_set, name='view_flashcard_set'),
+    path('quiz/<int:quiz_id>/take/', views.take_quiz_view, name='take_quiz')
 ]
 
 if settings.DEBUG:

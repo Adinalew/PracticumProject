@@ -38,12 +38,12 @@ class Flashcard(models.Model):
 
 
 class Quiz(models.Model):
-    session = models.ForeignKey(StudySession, on_delete=models.CASCADE, related_name='quizzes')
-    title = models.CharField(max_length=100, default="Untitled")
+    session = models.ForeignKey(StudySession, on_delete=models.CASCADE, related_name="quizzes")
+    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name="quizzes", null=True, blank=True)
     created_at = models.DateTimeField(auto_now_add=True)
 
     def __str__(self):
-        return f"{self.title[:50]}..."
+        return f"{self.user[:50]}..."
 
 class ExtractedNote(models.Model):
     session = models.ForeignKey(StudySession, related_name='extracted_notes', on_delete=models.CASCADE)
