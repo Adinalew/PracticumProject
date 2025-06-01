@@ -15,6 +15,7 @@ from .models import (StudySession, UploadedFile, ExtractedNote, StudyReview, Fol
 from .utils import (extract_text_from_uploaded_file, extract_text_from_file, extract_text_from_image,
                     extract_text_from_pdf, generate_flashcards_from_text, generate_study_review,
                     generate_followup_response, generate_tts_audio, get_text_from_session, generate_note_audio)
+
 QUESTION_TYPE_KEYS = {'mc', 'tf', 'match', 'long', 'fib', 'short'}
 
 # ✨ New form for customizing the AI-generated review
