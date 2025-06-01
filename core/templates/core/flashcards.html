@@ -189,6 +189,7 @@
             border-radius: 6px;
             margin-bottom: 20px;
             text-align: center;
+            transition: opacity 0.5s ease;
         }
     </style>
 </head>
@@ -197,11 +198,13 @@
     <h1>Flashcards for {{ session.title }}</h1>
 
     {% if messages %}
-    {% for message in messages %}
-    {% if "flashcard" in message.message|lower %}
-    <div class="message">{{ message }}</div>
-    {% endif %}
-    {% endfor %}
+    <div id="message-container">
+        {% for message in messages %}
+        {% if "flashcard" in message.message|lower %}
+        <div class="message">{{ message }}</div>
+        {% endif %}
+        {% endfor %}
+    </div>
     {% endif %}
 
     {% if flashcards %}
@@ -305,6 +308,15 @@
             showCard(currentIndex);
         }
     }
+
+    // ✅ Auto-hide messages after 2.5 seconds
+    setTimeout(() => {
+        const container = document.getElementById('message-container');
+        if (container) {
+            container.style.opacity = '0';
+            setTimeout(() => container.remove(), 500);
+        }
+    }, 2500);
 </script>
 </body>
 </html>
