@@ -12,6 +12,7 @@ from django.conf import settings
 from docx import Document
 from pptx import Presentation
 import fitz  # PyMuPDF
+import json
 
 # Load environment variables
 load_dotenv()
