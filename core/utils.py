@@ -17,7 +17,14 @@ from django.core.files.base import ContentFile
 from django.conf import settings
 import uuid
 from pdf2image import convert_from_bytes
+from transformers import TrOCRProcessor, VisionEncoderDecoderModel
+import torch
+from PIL import Image
 
+
+# load the processor and model just once (at module level)
+processor = TrOCRProcessor.from_pretrained("microsoft/trocr-base-handwritten")
+model = VisionEncoderDecoderModel.from_pretrained("microsoft/trocr-base-handwritten")
 
 # Hardcoded path to poppler bin
 os.environ["PATH"] += os.pathsep + r"C:\poppler\poppler-24.08.0\Library\bin"
@@ -25,6 +32,24 @@ os.environ["PATH"] += os.pathsep + r"C:\poppler\poppler-24.08.0\Library\bin"
 
 # Load environment variables
 load_dotenv()
+
+def extract_handwriting_from_image_with_trocr(file_field):
+    try:
+        print("🔠 Running TrOCR handwriting OCR...")
+        # read the image from the uploaded file
+        image_bytes = file_field.read()
+        image = Image.open(io.BytesIO(image_bytes)).convert("RGB")
+
+        # preprocess and predict
+        pixel_values = processor(images=image, return_tensors="pt").pixel_values
+        generated_ids = model.generate(pixel_values)
+        text = processor.batch_decode(generated_ids, skip_special_tokens=True)[0]
+
+        return text.strip()
+
+    except Exception as e:
+        print(f"❌ Error in TrOCR: {e}")
+        return ""
 
 # Tesseract setup
 pytesseract.pytesseract.tesseract_cmd = r'C:\Program Files\Tesseract-OCR\tesseract.exe'
@@ -50,13 +75,8 @@ def preprocess_image(image_file):
 
     return image
 
-def extract_text_from_image(image_file):
-    print("🔍 Starting OCR for image...")
-    image = preprocess_image(image_file)
-    print("🧪 Image preprocessed. Running Tesseract...")
-    text = pytesseract.image_to_string(image).strip()
-    print("📄 OCR result:", text)
-    return text
+def extract_text_from_image(file_field):
+    return extract_handwriting_from_image_with_trocr(file_field)
 
 def extract_text_from_pdf(file):
     file.seek(0)
