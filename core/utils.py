@@ -16,6 +16,12 @@ from .models import NoteAudio
 from django.core.files.base import ContentFile
 from django.conf import settings
 import uuid
+from pdf2image import convert_from_bytes
+
+
+# Hardcoded path to poppler bin
+os.environ["PATH"] += os.pathsep + r"C:\poppler\poppler-24.08.0\Library\bin"
+
 
 # Load environment variables
 load_dotenv()
@@ -25,15 +31,32 @@ pytesseract.pytesseract.tesseract_cmd = r'C:\Program Files\Tesseract-OCR\tessera
 
 def preprocess_image(image_file):
     image = Image.open(image_file)
+
+    # convert to grayscale
     image = image.convert('L')
+
+    # increase contrast more aggressively
     enhancer = ImageEnhance.Contrast(image)
-    image = enhancer.enhance(2)
+    image = enhancer.enhance(4.0)  # was 2
+
+    # apply sharpen filter
     image = image.filter(ImageFilter.SHARPEN)
+
+    # resize image to improve small handwriting recognition
+    base_width = 1000
+    w_percent = (base_width / float(image.size[0]))
+    h_size = int((float(image.size[1]) * float(w_percent)))
+    image = image.resize((base_width, h_size), Image.LANCZOS)
+
     return image
 
 def extract_text_from_image(image_file):
+    print("🔍 Starting OCR for image...")
     image = preprocess_image(image_file)
-    return pytesseract.image_to_string(image).strip()
+    print("🧪 Image preprocessed. Running Tesseract...")
+    text = pytesseract.image_to_string(image).strip()
+    print("📄 OCR result:", text)
+    return text
 
 def extract_text_from_pdf(file):
     file.seek(0)
@@ -77,38 +100,57 @@ def extract_text_from_file(file):
     else:
         return ""
 
+
+def extract_handwriting_from_image(image_file):
+    try:
+        print("🔍 Starting OCR for image...")
+        image = preprocess_image(image_file)
+        image_bytes = io.BytesIO()
+        image.save(image_bytes, format='JPEG')
+        print("🧪 Image preprocessed. Running Tesseract...")
+
+        result = pytesseract.image_to_string(image)
+        print("📄 OCR result:\n", result)
+        return result.strip()
+    except Exception as e:
+        print(f"❌ OCR failed: {e}")
+        return ""
+
+
 def extract_text_from_uploaded_file(uploaded_file):
     file_field = uploaded_file.file
     ext = os.path.splitext(file_field.name)[1].lower()
-    print(f"extract_text_from_uploaded_file called for {file_field.name} with extension {ext}")
+    print(f"📂 Received file: {file_field.name} (ext={ext})")
 
     try:
         if ext in ['.png', '.jpg', '.jpeg', '.bmp', '.tiff']:
+            print("🧠 Routing to extract_text_from_image()")
             return extract_text_from_image(file_field)
+
         elif ext == '.txt':
-            print("Trying to read .txt file...")
+            print("📄 Reading .txt file...")
             file_field.open()
-            file_field.seek(0)
             content_bytes = file_field.read()
-            print(f"Raw content bytes: {content_bytes[:50]}")
-            try:
-                content = content_bytes.decode('utf-8')
-            except UnicodeDecodeError:
-                print("UTF-8 decode failed, trying latin-1...")
-                content = content_bytes.decode('latin-1')
-            print(f"Extracted text from txt file (preview): {content[:100]}")
-            return content.strip()
+            return content_bytes.decode('utf-8', errors='ignore').strip()
+
         elif ext == '.pdf':
+            print("📄 Routing to extract_text_from_pdf()")
             return extract_text_from_pdf(file_field)
+
         elif ext == '.docx':
+            print("📄 Routing to extract_text_from_docx()")
             return extract_text_from_docx(file_field)
+
         elif ext == '.pptx':
+            print("📄 Routing to extract_text_from_pptx()")
             return extract_text_from_pptx(file_field)
+
         else:
-            print(f"No extractor for file type: {ext}")
+            print("⚠️ Unknown file type")
             return ""
+
     except Exception as e:
-        print(f"Error extracting text from {file_field.name}: {e}")
+        print(f"❌ Error in extract_text_from_uploaded_file: {e}")
         return ""
 
 def generate_tts_audio(text):
@@ -292,3 +334,16 @@ def generate_note_audio(note):
     except Exception as e:
         print(f"❌ Failed to generate AI voice for note {note.id}: {e}")
         return None
+
+def extract_handwriting_from_pdf(file):
+    try:
+        file.seek(0)
+        images = convert_from_bytes(file.read())
+        text = ""
+        for img in images:
+            img = preprocess_image(img)
+            text += pytesseract.image_to_string(img) + "\n"
+        return text.strip()
+    except Exception as e:
+        print(f"Error in handwriting PDF OCR: {e}")
+        return ""

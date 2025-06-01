@@ -1,4 +1,5 @@
-import json, openai
+import json
+import openai
 from django import forms
 from django.conf import settings
 from django.contrib import messages
@@ -8,9 +9,43 @@ from django.contrib.auth.forms import UserCreationForm
 from django.http import HttpResponse, JsonResponse
 from django.shortcuts import render, redirect, get_object_or_404
 from django.views.decorators.http import require_POST
-from .forms import StudySessionForm, MultiFileUploadForm, FollowUpForm, FlashcardCustomizationForm, QuizOptionsForm, ModelForm, Textarea
-from .models import StudySession, UploadedFile, ExtractedNote, StudyReview, FollowUp, Flashcard, FlashcardSet, Quiz, Question, QuizAttempt, UserAnswer
-from .utils import extract_text_from_uploaded_file, extract_text_from_file, extract_text_from_image, extract_text_from_pdf, generate_flashcards_from_text, generate_study_review, generate_followup_response, generate_tts_audio, get_text_from_session, generate_note_audio
+
+from .forms import (
+    StudySessionForm,
+    MultiFileUploadForm,
+    FollowUpForm,
+    FlashcardCustomizationForm,
+    QuizOptionsForm,
+    ModelForm,
+    Textarea
+)
+from .models import (
+    StudySession,
+    UploadedFile,
+    ExtractedNote,
+    StudyReview,
+    FollowUp,
+    Flashcard,
+    FlashcardSet,
+    Quiz,
+    Question,
+    QuizAttempt,
+    UserAnswer
+)
+from .utils import (
+    extract_text_from_uploaded_file,
+    extract_text_from_file,
+    extract_text_from_image,
+    extract_text_from_pdf,
+    extract_handwriting_from_pdf,
+    generate_flashcards_from_text,
+    generate_study_review,
+    generate_followup_response,
+    generate_tts_audio,
+    get_text_from_session,
+    generate_note_audio
+)
+
 QUESTION_TYPE_KEYS = {'mc', 'tf', 'match', 'long', 'fib', 'short'}
 
 # ✨ New form for customizing the AI-generated review
@@ -59,16 +94,21 @@ def dashboard_view(request):
     sessions = StudySession.objects.filter(user=request.user).order_by('-created_at')
     return render(request, 'core/dashboard.html', {'sessions': sessions})
 
+
 @login_required
 def start_session_view(request):
     if request.method == 'POST':
         session_form = StudySessionForm(request.POST)
-        file_form = MultiFileUploadForm(request.POST, request.FILES)
+
+        # ✅ Manually fetch uploaded files
+        files = request.FILES.getlist('files')
+
+        print("FILES:", request.FILES)  # Debugging
+        print("FILES.getlist('files'):", files)  # Debugging
 
         if session_form.is_valid():
-            files = request.FILES.getlist('files')
             if not files:
-                file_form.add_error('files', 'Please upload at least one file.')
+                messages.error(request, "Please upload at least one file.")
             else:
                 session = session_form.save(commit=False)
                 session.user = request.user
@@ -80,22 +120,39 @@ def start_session_view(request):
                         session=session,
                         file=f
                     )
+
+                    # ✅ Extract text using utility function
                     extracted_text = extract_text_from_uploaded_file(uploaded_file)
+
+                    print("🧠 OCR from view:", repr(extracted_text))  #
+
                     if extracted_text.strip():
                         ExtractedNote.objects.create(session=session, text=extracted_text, file=uploaded_file)
 
                 return redirect('session_detail', session_id=session.id)
 
-        print("Session Form Errors:", session_form.errors)
-        print("File Form Errors:", file_form.errors)
+        else:
+            print("Session Form Errors:", session_form.errors)
+
     else:
         session_form = StudySessionForm()
-        file_form = MultiFileUploadForm()
 
     return render(request, 'core/start_session.html', {
         'session_form': session_form,
-        'file_form': file_form,
     })
+# Python
+@login_required
+def debug_extracted_notes(request, session_id):
+    session = get_object_or_404(StudySession, id=session_id, user=request.user)
+    notes = ExtractedNote.objects.filter(session=session)
+
+    if not notes.exists():
+        print(f"No ExtractedNote objects found for session ID: {session_id}")
+    else:
+        for note in notes:
+            print(f"- Note ID: {note.id}, Text Preview: {note.text[:100]}")
+
+    return HttpResponse("Debugging complete. Check the server logs for details.")
 
 @login_required
 def upload_files_to_session(request, session_id):
@@ -105,6 +162,7 @@ def upload_files_to_session(request, session_id):
         form = MultiFileUploadForm(request.POST, request.FILES)
         if form.is_valid():
             files = request.FILES.getlist('files')
+
             if not files:
                 messages.error(request, "No files selected for upload.")
             else:
@@ -114,7 +172,13 @@ def upload_files_to_session(request, session_id):
                         session=session,
                         file=f
                     )
-                    extracted_text = extract_text_from_uploaded_file(uploaded_file)
+
+                    # Auto-detect logic: PDFs = assume handwritten
+                    if f.name.lower().endswith('.pdf'):
+                        extracted_text = extract_handwriting_from_pdf(f)
+                    else:
+                        extracted_text = extract_text_from_uploaded_file(uploaded_file)
+
                     if extracted_text.strip():
                         ExtractedNote.objects.create(session=session, text=extracted_text, file=uploaded_file)
 

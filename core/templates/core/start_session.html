@@ -2,69 +2,70 @@
 {% block title %}Start a Session{% endblock %}
 
 {% block content %}
-    <style>
-        .start-session-container {
-            max-width: 600px;
-            margin: 40px auto;
-            background-color: #f9f9f9;
-            padding: 30px 40px;
-            border-radius: 12px;
-            box-shadow: 0 4px 12px rgba(0,0,0,0.1);
-        }
+<style>
+    .start-session-container {
+        max-width: 600px;
+        margin: 40px auto;
+        background-color: #f9f9f9;
+        padding: 30px 40px;
+        border-radius: 12px;
+        box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+    }
 
-        .start-session-container h2 {
-            text-align: center;
-            margin-bottom: 25px;
-            color: #333;
-        }
+    .start-session-container h2 {
+        text-align: center;
+        margin-bottom: 25px;
+        color: #333;
+    }
 
-        form label {
-            font-weight: 600;
-            display: block;
-            margin-top: 15px;
-            margin-bottom: 6px;
-            color: #444;
-        }
+    form label {
+        font-weight: 600;
+        display: block;
+        margin-top: 15px;
+        margin-bottom: 6px;
+        color: #444;
+    }
 
-        form input, form select, form textarea {
-            width: 100%;
-            padding: 10px;
-            border: 1px solid #ccc;
-            border-radius: 6px;
-            box-sizing: border-box;
-        }
+    form input, form select, form textarea {
+        width: 100%;
+        padding: 10px;
+        border: 1px solid #ccc;
+        border-radius: 6px;
+        box-sizing: border-box;
+    }
 
-        form input[type="file"] {
-            padding: 8px;
-        }
+    form input[type="file"] {
+        padding: 8px;
+    }
 
-        button[type="submit"] {
-            margin-top: 25px;
-            width: 100%;
-            padding: 12px;
-            background-color: #4CAF50;
-            color: white;
-            font-size: 16px;
-            border: none;
-            border-radius: 6px;
-            cursor: pointer;
-        }
+    button[type="submit"] {
+        margin-top: 25px;
+        width: 100%;
+        padding: 12px;
+        background-color: #4CAF50;
+        color: white;
+        font-size: 16px;
+        border: none;
+        border-radius: 6px;
+        cursor: pointer;
+    }
 
-        button[type="submit"]:hover {
-            background-color: #45a049;
-        }
-    </style>
+    button[type="submit"]:hover {
+        background-color: #45a049;
+    }
+</style>
 
-    <div class="start-session-container">
-        <h2>📚 Start a New Study Session</h2>
+<div class="start-session-container">
+    <h2>📚 Start a New Study Session</h2>
 
-        <form method="post" enctype="multipart/form-data">
-            {% csrf_token %}
-
-            {{ session_form.as_p }}
-            {{ file_form.as_p }}
-
-            <button type="submit">Start Session</button>
-        </form>
-    </div>
+    <form method="post" enctype="multipart/form-data">
+        {% csrf_token %}
+        {{ session_form.as_p }}
+        <p>
+            <label for="id_files">Select files:</label>
+            <input type="file" name="files" id="id_files" multiple required>
+        </p>
+        <button type="submit">Start Session</button>
+    </form>
+</div>
 {% endblock %}
