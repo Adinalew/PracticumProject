@@ -198,7 +198,9 @@
 
     {% if messages %}
     {% for message in messages %}
+    {% if "flashcard" in message.message|lower %}
     <div class="message">{{ message }}</div>
+    {% endif %}
     {% endfor %}
     {% endif %}
 

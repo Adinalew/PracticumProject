@@ -209,14 +209,19 @@ def delete_session(request, session_id):
 @login_required
 def generate_flashcards(request, session_id):
     session = get_object_or_404(StudySession, id=session_id, user=request.user)
+
+    # ✅ Clear unrelated messages from previous views (like "Session deleted")
+    list(messages.get_messages(request))  # accessing clears them
+
     form = FlashcardCustomizationForm(request.POST or None)
     flashcard_sets = session.flashcard_sets.all().order_by('-created_at')
-
-    flashcards = []  # default
+    flashcards = []
 
     if flashcard_sets.exists():
         latest_set = flashcard_sets.first()
         flashcards = latest_set.cards.all().order_by('created_at')
+    else:
+        messages.info(request, "No flashcards yet for this session. Try generating some below!")
 
     if request.method == 'POST' and 'generate_flashcards' in request.POST:
         if form.is_valid():
@@ -236,10 +241,7 @@ def generate_flashcards(request, session_id):
                     for q, a in card_pairs:
                         Flashcard.objects.create(flashcard_set=flashcard_set, question=q, answer=a)
                     messages.success(request, "Flashcards generated successfully!")
-
-                    # ✅ show newly generated ones
                     flashcards = flashcard_set.cards.all().order_by('created_at')
-
                 else:
                     messages.error(request, "No flashcards were generated. Try a different prompt.")
             except Exception as e:
@@ -252,8 +254,9 @@ def generate_flashcards(request, session_id):
         'session': session,
         'flashcard_sets': flashcard_sets,
         'form': form,
-        'flashcards': flashcards,  # ✅ pass the cards
+        'flashcards': flashcards,
     })
+
 @login_required
 def flashcard_set_detail(request, session_id, set_name):
     session = get_object_or_404(StudySession, id=session_id, user=request.user)
