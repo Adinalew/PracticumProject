@@ -115,3 +115,11 @@ class FollowUp(models.Model):
 
     def __str__(self):
         return f"Q: {self.question[:30]}..."
+
+class NoteAudio(models.Model):
+    note = models.OneToOneField('ExtractedNote', on_delete=models.CASCADE, related_name='audio')
+    audio_file = models.FileField(upload_to='note_audio/')
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    def __str__(self):
+        return f"Audio for note {self.note.id}"

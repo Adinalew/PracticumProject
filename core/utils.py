@@ -12,6 +12,10 @@ from django.conf import settings
 from docx import Document
 from pptx import Presentation
 import fitz  # PyMuPDF
+from .models import NoteAudio
+from django.core.files.base import ContentFile
+from django.conf import settings
+import uuid
 
 # Load environment variables
 load_dotenv()
@@ -253,3 +257,38 @@ def generate_flashcards_from_text(text, custom_prompt=None):
     except Exception as e:
         print(f"❌ General error generating flashcards: {e}")
         return []
+
+def generate_note_audio(note):
+    """
+    Uses OpenAI TTS to generate natural-sounding voice for a single ExtractedNote.
+    Saves the audio file and returns the NoteAudio instance.
+    """
+    api_key = os.getenv("OPENAI_API_KEY")
+    cert_path = "C:/certificate/2023 techloq bundle certificate.crt"
+
+    if os.path.exists(cert_path):
+        http_client = httpx.Client(verify=cert_path)
+    else:
+        http_client = httpx.Client()
+
+    client = OpenAI(api_key=api_key, http_client=http_client)
+
+    try:
+        response = client.audio.speech.create(
+            model="tts-1",  # Or use "tts-1-hd" if allowed
+            voice="shimmer",  # options: alloy, echo, fable, onyx, nova, shimmer
+            input=note.text[:4096]  # OpenAI TTS limit per request
+        )
+
+        mp3_data = response.content
+        filename = f"note_{note.id}_{uuid.uuid4().hex[:8]}.mp3"
+
+        note_audio = NoteAudio(note=note)
+        note_audio.audio_file.save(filename, ContentFile(mp3_data))
+        note_audio.save()
+
+        return note_audio
+
+    except Exception as e:
+        print(f"❌ Failed to generate AI voice for note {note.id}: {e}")
+        return None

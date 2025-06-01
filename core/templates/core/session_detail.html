@@ -136,7 +136,11 @@
     <div id="notes-{{ file.id }}" style="display:none;" class="notebook-box">
         {% for note in notes %}
         {% if note.file.id == file.id %}
-        {{ note.text }}
+        <div style="margin-bottom: 20px;">
+            <p>{{ note.text }}</p>
+            <button class="toggle-btn" onclick="loadAudio('{{ note.id }}', this)">🎧 Listen</button>
+            <audio id="audio-{{ note.id }}" style="display: none;" controls></audio>
+        </div>
         {% endif %}
         {% endfor %}
     </div>
@@ -217,6 +221,35 @@
     function toggleTitleEdit() {
         document.getElementById('sessionTitle').style.display = 'none';
         document.getElementById('editTitleForm').style.display = 'inline-block';
+    }
+
+    function loadAudio(noteId, button) {
+        const audio = document.getElementById(`audio-${noteId}`);
+        if (!audio.src) {
+            button.disabled = true;
+            button.innerText = "⏳ Loading...";
+            fetch(`/note_audio/${noteId}/`)
+                .then(response => {
+                    if (!response.redirected) {
+                        throw new Error("Failed to fetch audio.");
+                    }
+                    return response.url;
+                })
+                .then(url => {
+                    audio.src = url;
+                    audio.style.display = "block";
+                    audio.play();
+                    button.innerText = "🔁 Listen Again";
+                    button.disabled = false;
+                })
+                .catch(err => {
+                    alert("Failed to load audio.");
+                    console.error(err);
+                    button.innerText = "❌ Error";
+                });
+        } else {
+            audio.play();
+        }
     }
 </script>
 {% endblock %}

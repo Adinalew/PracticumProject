@@ -6,7 +6,8 @@ from django.contrib import messages
 from django.http import HttpResponse, HttpResponseRedirect
 from django import forms
 from django.urls import reverse
-
+from .models import NoteAudio, ExtractedNote
+from .utils import generate_note_audio
 from .models import StudyReview, FollowUp
 from django.forms import ModelForm, Textarea
 from django.views.decorators.http import require_POST
@@ -529,3 +530,22 @@ def session_reviews(request, session_id):
         'session': session,
         'reviews': reviews,
     })
+
+@login_required
+def note_audio_view(request, note_id):
+    """
+    Returns MP3 audio for a given ExtractedNote.
+    If audio doesn't exist, generate it using AI voice.
+    """
+    note = get_object_or_404(ExtractedNote, id=note_id, session__user=request.user)
+
+    # If audio already exists, serve it
+    if hasattr(note, 'audio') and note.audio.audio_file:
+        return redirect(note.audio.audio_file.url)
+
+    # Otherwise, generate it
+    audio_obj = generate_note_audio(note)
+    if audio_obj:
+        return redirect(audio_obj.audio_file.url)
+    else:
+        return HttpResponse("Error generating audio.", status=500)
