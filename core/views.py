@@ -15,7 +15,7 @@ from .models import (StudySession, UploadedFile, ExtractedNote, StudyReview, Fol
 from .utils import (extract_text_from_uploaded_file, extract_text_from_file, extract_text_from_image,
                     extract_text_from_pdf, generate_flashcards_from_text, generate_study_review,
                     generate_followup_response, generate_tts_audio, get_text_from_session)
-QUESTION_TYPE_KEYS = {'mc', 'tf', 'match', 'long', 'fib', 'short'}
+QUESTION_TYPE_KEYS = {'mc', 'tf', 'long', 'fib', 'short'}
 
 # ✨ New form for customizing the AI-generated review
 class ReviewCustomizationForm(forms.Form):
@@ -428,19 +428,6 @@ def generate_quiz_questions(text, qtypes):
       ...
     ]
     
-    For matching questions, return a list like:
-    Match the term with its correct definition:
-
-    Terms:
-    - Term1
-    - Term2
-    - Term3
-
-    Definitions:
-    - Def1
-    - Def2
-    - Def3
-
     Only return valid JSON.
     """
 
@@ -508,7 +495,9 @@ def take_quiz_view(request, quiz_id):
         correct_count = 0
 
         for question in questions:
-            user_answer = request.POST.get(f'question_{question.id}')
+            user_answer = request.POST.get(f'question_{question.id}', None)
+            if user_answer is not None:
+                user_answer = user_answer.strip()
             # TODO: Adjust parsing for complex types (JSON, lists) as needed.
 
             # Simple correctness check (expand logic per question_type)
@@ -522,9 +511,6 @@ def take_quiz_view(request, quiz_id):
                     is_correct = (str(user_answer).strip().lower() == str(correct).strip().lower())
             elif question.question_type == 'long':
                 # Optional: manual grading or AI grading
-                is_correct = False
-            elif question.question_type == 'match':
-                # Implement matching logic here
                 is_correct = False
 
             UserAnswer.objects.create(
@@ -632,3 +618,15 @@ def session_reviews(request, session_id):
         'session': session,
         'reviews': reviews,
     })
+
+@login_required
+def delete_flashcard(request, flashcard_id):
+    flashcard = get_object_or_404(Flashcard, id=flashcard_id, flashcard_set__session__user=request.user)
+    flashcard.delete()
+    return redirect('session_detail', session_id=flashcard.session.id)
+
+@login_required
+def delete_quiz(request, quiz_id):
+    quiz = get_object_or_404(Quiz, id=quiz_id, session__user=request.user)
+    quiz.delete()
+    return redirect('session_detail', session_id=quiz.session_id)

@@ -18,7 +18,6 @@ class StudySessionForm(forms.ModelForm):
 QUESTION_TYPE_CHOICES = [
     ('mc', 'Multiple Choice'),
     ('tf', 'True/False'),
-    ('match', 'Matching'),
     ('long', 'Long Answer'),
     ('fib', 'Fill in the Blank'),
     ('short', 'Short Answer'),
@@ -32,7 +31,6 @@ class QuizOptionsForm(forms.Form):
             ('fib', 'Fill in the Blank'),
             ('short', 'Short Answer'),
             ('long', 'Long Answer'),
-            ('match', 'Matching'),
         ],
         widget=forms.CheckboxSelectMultiple,
         required=True

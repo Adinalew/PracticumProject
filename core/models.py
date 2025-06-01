@@ -74,7 +74,6 @@ class Question(models.Model):
     QUESTION_TYPES = [
         ('mc', 'Multiple Choice'),
         ('tf', 'True/False'),
-        ('match', 'Matching'),
         ('long', 'Long Answer'),
         ('fib', 'Fill in the Blank'),
         ('short', 'Short Answer'),
@@ -82,7 +81,7 @@ class Question(models.Model):
     quiz = models.ForeignKey(Quiz, on_delete=models.CASCADE)
     question_type = models.CharField(max_length=10, choices=QUESTION_TYPES)
     text = models.TextField()
-    options = models.JSONField(blank=True, null=True)  # for MC, matching, FIB options etc.
+    options = models.JSONField(blank=True, null=True)  # for MC, FIB options etc.
     correct_answer = models.JSONField()  # answer(s) in JSON format (string/list/dict)
     explanation = models.TextField(blank=True)
 
@@ -95,7 +94,7 @@ class QuizAttempt(models.Model):
 class UserAnswer(models.Model):
     attempt = models.ForeignKey(QuizAttempt, on_delete=models.CASCADE)
     question = models.ForeignKey(Question, on_delete=models.CASCADE)
-    answer = models.JSONField()  # user submitted answer (string/list/dict)
+    answer = models.JSONField(null=True, blank=True)
     is_correct = models.BooleanField()
 
 class StudyReview(models.Model):
