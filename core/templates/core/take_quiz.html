@@ -3,9 +3,81 @@
 <head>
     <meta charset="UTF-8">
     <title>Take Quiz</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #f9f9f9;
+            margin: 0;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1000px;
+            margin: 0 auto;
+            text-align: center;
+        }
+
+        h1 {
+            color: #333;
+            margin-bottom: 25px;
+        }
+
+        .form-section {
+            background-color: #fff;
+            padding: 20px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            text-align: left;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+
+        label {
+            display: block;
+            margin-bottom: 8px;
+        }
+
+        input[type="text"],
+        input[type="radio"] {
+            margin-right: 10px;
+        }
+
+        .generate-btn {
+            margin-top: 20px;
+            padding: 10px 25px;
+            font-size: 16px;
+            background-color: #28a745;
+            color: white;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+        }
+
+        .generate-btn:hover {
+            background-color: #218838;
+        }
+
+        .top-bar {
+            margin-top: 30px;
+        }
+
+        .back-btn {
+            padding: 10px 20px;
+            font-size: 15px;
+            background-color: #007bff;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            text-decoration: none;
+        }
+
+        .back-btn:hover {
+            background-color: #0056b3;
+        }
+    </style>
 </head>
 <body>
-<h2>Take Quiz (ID: {{ quiz.id }})</h2>
+<h2>Take Quiz</h2>
 
 <form method="post">
     {% csrf_token %}
@@ -25,18 +97,14 @@
         <label><input type="radio" name="question_{{ question.id }}" value="True"> True</label><br>
         <label><input type="radio" name="question_{{ question.id }}" value="False"> False</label><br>
 
-        {% elif question.question_type == 'match' %}
-        <!-- For matching, implement UI (e.g., dropdowns) here -->
-        <p>Matching question: answer input TBD</p>
-
         {% elif question.question_type == 'long' %}
         <textarea name="question_{{ question.id }}" rows="4" cols="50"></textarea>
 
-        {% elif question.question_type == 'fib' %}
+        {% elif question.question_type == 'fib' or question.question_type == 'short' %}
         <input type="text" name="question_{{ question.id }}">
 
-        {% elif question.question_type == 'short' %}
-        <input type="text" name="question_{{ question.id }}">
+        {% else %}
+        <p class="text-muted">Unsupported question type or data is missing.</p>
         {% endif %}
     </div>
     <hr>

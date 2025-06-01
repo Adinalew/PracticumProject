@@ -32,7 +32,9 @@ urlpatterns = [
     path('flashcards/<int:set_id>/', view_flashcard_set, name='view_flashcard_set'),
     path('session/<int:session_id>/edit-title/', views.edit_session_title, name='edit_session_title'),
     path('note_audio/<int:note_id>/', views.note_audio_view, name='note_audio'),
-    path('quiz/<int:quiz_id>/take/', views.take_quiz_view, name='take_quiz')
+    path('quiz/<int:quiz_id>/take/', views.take_quiz_view, name='take_quiz'),
+    path('quiz/<int:quiz_id>/delete/', views.delete_quiz, name='delete_quiz'),
+    path('flashcard/delete/<int:flashcard_id>/', views.delete_flashcard, name='delete_flashcard')
 ]
 
 if settings.DEBUG:

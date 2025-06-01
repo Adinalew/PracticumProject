@@ -16,18 +16,28 @@
             justify-content: center;
             height: 100vh;
             text-align: center;
+            animation: fadeIn 1s ease-in-out;
         }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
         header {
             margin-bottom: 2rem;
         }
+
         header h1 {
             font-size: 2.5rem;
             color: #4CAF50;
         }
+
         header p {
             font-size: 1.2rem;
             color: #555;
         }
+
         .login-button {
             padding: 0.8rem 1.5rem;
             font-size: 1rem;
@@ -37,16 +47,28 @@
             border-radius: 5px;
             cursor: pointer;
             text-decoration: none;
+            transition: background-color 0.3s ease;
         }
+
         .login-button:hover {
             background-color: #45a049;
         }
+
         .graphics {
             margin-top: 2rem;
         }
+
         .graphics img {
-            max-width: 100%;
+            max-width: 90%;
             height: auto;
+            border-radius: 15px;
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.15);
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+        }
+
+        .graphics img:hover {
+            transform: scale(1.03);
+            box-shadow: 0 15px 30px rgba(0, 0, 0, 0.25);
         }
     </style>
 </head>
@@ -57,7 +79,8 @@
 </header>
 <a href="/login" class="login-button">Log In</a>
 <div class="graphics">
-    <img src="https://via.placeholder.com/600x300?text=Study+Smarter+with+AI" alt="Study Graphics">
+<!--    <img src="https://images.unsplash.com/photo-1600195077075-d99c443e456e?ixlib=rb-4.0.3&auto=format&fit=crop&w=1200&q=80"-->
+<!--         alt="Student with laptop" />-->
 </div>
 </body>
 </html>
