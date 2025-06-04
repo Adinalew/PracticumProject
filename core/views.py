@@ -14,7 +14,8 @@ from .models import (StudySession, UploadedFile, ExtractedNote, StudyReview, Fol
                      Quiz, Question, QuizAttempt, UserAnswer)
 from .utils import (extract_text_from_uploaded_file, extract_text_from_file, extract_text_from_image,
                     extract_text_from_pdf, generate_flashcards_from_text, generate_study_review,
-                    generate_followup_response, generate_tts_audio, get_text_from_session, generate_note_audio)
+                    generate_followup_response, generate_tts_audio, get_text_from_session, generate_note_audio,
+                    extract_handwriting_from_pdf)
 QUESTION_TYPE_KEYS = {'mc', 'tf', 'long', 'fib', 'short'}
 
 # ✨ New form for customizing the AI-generated review
@@ -150,8 +151,6 @@ def upload_files_to_session(request, session_id):
 
                     if extracted_text.strip():
                         ExtractedNote.objects.create(session=session, text=extracted_text, file=uploaded_file)
-
-                messages.success(request, "Files uploaded successfully!")
         else:
             messages.error(request, "Error in file upload form.")
 
@@ -266,7 +265,6 @@ def generate_flashcards(request, session_id):
                     flashcard_set = FlashcardSet.objects.create(session=session, title=title)
                     for q, a in card_pairs:
                         Flashcard.objects.create(flashcard_set=flashcard_set, question=q, answer=a)
-                    messages.success(request, "Flashcards generated successfully!")
                     flashcards = flashcard_set.cards.all().order_by('created_at')
                 else:
                     messages.error(request, "No flashcards were generated. Try a different prompt.")
@@ -684,12 +682,18 @@ def note_audio_view(request, note_id):
         return redirect(audio_obj.audio_file.url)
     else:
         return HttpResponse("Error generating audio.", status=500)
-
+    
 @login_required
-def delete_flashcard(request, flashcard_id):
-    flashcard = get_object_or_404(Flashcard, id=flashcard_id, flashcard_set__session__user=request.user)
-    flashcard.delete()
-    return redirect('session_detail', session_id=flashcard.session.id)
+def delete_flashcard_set(request, flashcard_set_id):
+    flashcard_set = get_object_or_404(
+        FlashcardSet,
+        id=flashcard_set_id,
+        session__user=request.user  # ensures user owns the set
+    )
+
+    session_id = flashcard_set.session.id  # save for redirect
+    flashcard_set.delete()
+    return redirect('session_detail', session_id=session_id)
 
 @login_required
 def delete_quiz(request, quiz_id):

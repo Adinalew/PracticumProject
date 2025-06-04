@@ -159,8 +159,8 @@
         <strong>Created:</strong> {{ set.created_at|date:"M d, Y H:i" }}
     </div>
     <a href="{% url 'view_flashcard_set' set.id %}" class="toggle-btn">📚 View Flashcards</a>
-    <a href="{% url 'delete_flashcard' set.id %}" class="btn btn-sm btn-danger"
-       onclick="return confirm('Are you sure you want to delete these flashcards?');">
+    <a href="{% url 'delete_flashcard_set' set.id %}" class="btn btn-sm btn-danger"
+       onclick="return confirm('Are you sure you want to delete this flashcard set?');">
         Delete
     </a>
 </div>
@@ -197,23 +197,6 @@
 {% else %}
 <p>No quizzes taken for this session yet.</p>
 {% endif %}
-
-<hr>
-
-<h3>Audio Files</h3>
-<ul>
-    {% for audio in session.audio_files.all %}
-    <li>
-        <strong>{{ audio.title|default:"Generated Audio" }}</strong><br>
-        <audio controls>
-            <source src="{{ audio.audio_file.url }}" type="audio/mpeg">
-            Your browser does not support the audio element.
-        </audio>
-    </li>
-    {% empty %}
-    <li>No audio files generated yet.</li>
-    {% endfor %}
-</ul>
 
 <hr>
 
