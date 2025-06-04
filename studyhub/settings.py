@@ -20,6 +20,11 @@ OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
 
+STATICFILES_DIRS = [
+    BASE_DIR / "core" / "static",  # adjust if needed
+]
+
+
 # Quick-start development settings - unsuitable for production
 SECRET_KEY = 'django-insecure-z%8s((1p&wt07__#wf#z3wxans$41c^v+w_lrut#qwp@wpjdg-'
 

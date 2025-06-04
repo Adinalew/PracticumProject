@@ -22,8 +22,8 @@ import torch
 from PIL import Image
 
 # load the processor and model just once (at module level)
-processor = TrOCRProcessor.from_pretrained("microsoft/trocr-base-handwritten")
-model = VisionEncoderDecoderModel.from_pretrained("microsoft/trocr-base-handwritten")
+#processor = TrOCRProcessor.from_pretrained("microsoft/trocr-base-handwritten")
+#model = VisionEncoderDecoderModel.from_pretrained("microsoft/trocr-base-handwritten")
 
 # Hardcoded path to poppler bin
 os.environ["PATH"] += os.pathsep + r"C:\poppler\poppler-24.08.0\Library\bin"
@@ -33,6 +33,11 @@ import json
 # Load environment variables
 load_dotenv()
 
+def get_trocr_model():
+    processor = TrOCRProcessor.from_pretrained("microsoft/trocr-base-handwritten")
+    model = VisionEncoderDecoderModel.from_pretrained("microsoft/trocr-base-handwritten")
+    return processor, model
+
 def extract_handwriting_from_image_with_trocr(file_field):
     try:
         print("🔠 Running TrOCR handwriting OCR...")
@@ -41,6 +46,7 @@ def extract_handwriting_from_image_with_trocr(file_field):
         image = Image.open(io.BytesIO(image_bytes)).convert("RGB")
 
         # preprocess and predict
+        processor, model = get_trocr_model()
         pixel_values = processor(images=image, return_tensors="pt").pixel_values
         generated_ids = model.generate(pixel_values)
         text = processor.batch_decode(generated_ids, skip_special_tokens=True)[0]
@@ -77,6 +83,10 @@ def preprocess_image(image_file):
 
 def extract_text_from_image(file_field):
     return extract_handwriting_from_image_with_trocr(file_field)
+
+
+
+
 
 def extract_text_from_pdf(file):
     file.seek(0)
@@ -266,7 +276,7 @@ def generate_flashcards_from_text(text, custom_prompt=None):
 
     if not custom_prompt:
         custom_prompt = (
-            "Read the following study notes and generate helpful flashcards. "
+            "Read the following study notes throroughly and generate helpful flashcards. "
             "They should include important terms and clear explanations. "
             "Return the result in this format:\n\n"
             "Q: ...\nA: ...\n\nQ: ...\nA: ..."

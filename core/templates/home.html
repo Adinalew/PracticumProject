@@ -1,4 +1,5 @@
 <!DOCTYPE html>
+{% load static %}
 <html lang="en">
 <head>
     <meta charset="UTF-8" />
@@ -168,11 +169,12 @@
 
 <!-- 👇 Animation Sequence Starts Here -->
 <div class="animation-container" id="animationSequence">
-    <img src="pic1.jpg" id="imgA" class="step-img" alt="Step 1">
-    <img src="arrow.gif" id="arrowAB" class="arrow" alt="Arrow A to B">
-    <img src="pic2.jpg" id="imgB" class="step-img" alt="Step 2">
-    <img src="arrow.gif" id="arrowBC" class="arrow" alt="Arrow B to C">
-    <img src="pic3.jpg" id="imgC" class="step-img" alt="Step 3">
+    <img src="{% static 'pic1.jpg' %}" id="imgA" class="step-img" alt="Step 1">
+    <img src="{% static 'arrow.gif' %}" id="arrowAB" class="arrow" alt="Arrow A to B">
+    <img src="{% static 'pic2.jpg' %}" id="imgB" class="step-img" alt="Step 2">
+    <img src="{% static 'arrow.gif' %}" id="arrowBC" class="arrow" alt="Arrow B to C">
+    <img src="{% static 'pic3.jpg' %}" id="imgC" class="step-img" alt="Step 3">
+
 </div>
 
 <script>
