@@ -455,12 +455,16 @@ def quiz_options_view(request, session_id):
     })
 
 def generate_quiz_questions(text, qtypes):
+    from openai import OpenAI, OpenAIError
+    import httpx
+    import os
+
     prompt = f"""
     Based on the following study material, generate 5 questions of each of the following types: {', '.join(qtypes)}.
-    
+
     Study material:
     {text}
-    
+
     Provide output in this JSON format:
     [
       {{
@@ -472,14 +476,17 @@ def generate_quiz_questions(text, qtypes):
       }},
       ...
     ]
-    
+
     Only return valid JSON.
     """
 
-    try:
-        openai.api_key = settings.OPENAI_API_KEY
+    cert_path = "C:/certificate/2023 techloq bundle certificate.crt"
+    http_client = httpx.Client(verify=cert_path) if os.path.exists(cert_path) else httpx.Client()
 
-        response = openai.chat.completions.create(
+    client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"), http_client=http_client)
+
+    try:
+        response = client.chat.completions.create(
             model="gpt-4",
             messages=[{"role": "user", "content": prompt}],
             temperature=0.7,
@@ -498,9 +505,6 @@ def generate_quiz_questions(text, qtypes):
             else:
                 print("Invalid question skipped:", q)
 
-        if not valid_questions:
-            print("No valid questions generated.")
-        print("Valid questions:", valid_questions)
         return valid_questions
 
     except json.JSONDecodeError as json_err:
@@ -508,8 +512,12 @@ def generate_quiz_questions(text, qtypes):
         print("Response content was:", result)
         return []
 
+    except OpenAIError as e:
+        print("OpenAI API error:", e)
+        return []
+
     except Exception as e:
-        print("OpenAI API or other error:", e)
+        print("Unexpected error:", e)
         return []
 
 def get_combined_session_text(session):

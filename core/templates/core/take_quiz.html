@@ -1,116 +1,133 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <title>Take Quiz</title>
-    <style>
-        body {
-            font-family: Arial, sans-serif;
-            background-color: #f9f9f9;
-            margin: 0;
-            padding: 20px;
+{% extends 'core/base.html' %}
+{% block content %}
+<style>
+    .quiz-container {
+        max-width: 800px;
+        margin: 40px auto;
+        padding: 30px;
+        background-color: #ffffff;
+        border-radius: 10px;
+        box-shadow: 0 6px 16px rgba(0, 0, 0, 0.08);
+        font-family: 'Segoe UI', sans-serif;
+        animation: fadeInSlide 0.8s ease-in-out;
+    }
+
+    .quiz-container h2 {
+        text-align: center;
+        font-size: 1.8rem;
+        margin-bottom: 25px;
+    }
+
+    .question-block {
+        background-color: #f8f9fa;
+        padding: 20px;
+        border-left: 5px solid #007bff;
+        border-radius: 6px;
+        margin-bottom: 20px;
+        opacity: 0;
+        transform: translateY(20px);
+        animation: fadeInUp 0.6s forwards;
+        animation-delay: calc(0.1s * var(--i));
+    }
+
+    .question-block p {
+        font-size: 1rem;
+        margin-bottom: 10px;
+    }
+
+    label {
+        display: block;
+        margin-bottom: 8px;
+        font-size: 1rem;
+    }
+
+    input[type="text"],
+    textarea {
+        width: 100%;
+        padding: 8px 10px;
+        margin-top: 5px;
+        font-size: 1rem;
+        border: 1px solid #ccc;
+        border-radius: 4px;
+        box-sizing: border-box;
+    }
+
+    input[type="radio"] {
+        margin-right: 8px;
+    }
+
+    .submit-btn {
+        display: block;
+        width: 100%;
+        padding: 12px;
+        font-size: 1.1rem;
+        background-color: #28a745;
+        color: white;
+        border: none;
+        border-radius: 6px;
+        cursor: pointer;
+        margin-top: 25px;
+        transition: background-color 0.3s, transform 0.2s;
+    }
+
+    .submit-btn:hover {
+        background-color: #218838;
+        transform: scale(1.03);
+    }
+
+    /* Animations */
+    @keyframes fadeInUp {
+        to {
+            opacity: 1;
+            transform: translateY(0);
         }
+    }
 
-        .container {
-            max-width: 1000px;
-            margin: 0 auto;
-            text-align: center;
+    @keyframes fadeInSlide {
+        from {
+            opacity: 0;
+            transform: translateY(30px);
         }
-
-        h1 {
-            color: #333;
-            margin-bottom: 25px;
+        to {
+            opacity: 1;
+            transform: translateY(0);
         }
+    }
+</style>
 
-        .form-section {
-            background-color: #fff;
-            padding: 20px;
-            border-radius: 8px;
-            margin-bottom: 20px;
-            text-align: left;
-            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-        }
+<div class="quiz-container">
+    <h2>🧠 Take Quiz</h2>
+    <form method="post">
+        {% csrf_token %}
 
-        label {
-            display: block;
-            margin-bottom: 8px;
-        }
+        {% for question in questions %}
+        <div class="question-block" style="--i: {{ forloop.counter }}">
+            <p><strong>Q{{ forloop.counter }}:</strong> {{ question.text }}</p>
 
-        input[type="text"],
-        input[type="radio"] {
-            margin-right: 10px;
-        }
+            {% if question.question_type == 'mc' %}
+            {% for option in question.options %}
+            <label>
+                <input type="radio" name="question_{{ question.id }}" value="{{ option }}"> {{ option }}
+            </label>
+            {% endfor %}
 
-        .generate-btn {
-            margin-top: 20px;
-            padding: 10px 25px;
-            font-size: 16px;
-            background-color: #28a745;
-            color: white;
-            border: none;
-            border-radius: 6px;
-            cursor: pointer;
-        }
+            {% elif question.question_type == 'tf' %}
+            <label><input type="radio" name="question_{{ question.id }}" value="True"> True</label>
+            <label><input type="radio" name="question_{{ question.id }}" value="False"> False</label>
 
-        .generate-btn:hover {
-            background-color: #218838;
-        }
+            {% elif question.question_type == 'long' %}
+            <textarea name="question_{{ question.id }}" rows="4"></textarea>
 
-        .top-bar {
-            margin-top: 30px;
-        }
+            {% elif question.question_type == 'fib' or question.question_type == 'short' %}
+            <input type="text" name="question_{{ question.id }}">
 
-        .back-btn {
-            padding: 10px 20px;
-            font-size: 15px;
-            background-color: #007bff;
-            color: white;
-            border: none;
-            border-radius: 5px;
-            cursor: pointer;
-            text-decoration: none;
-        }
-
-        .back-btn:hover {
-            background-color: #0056b3;
-        }
-    </style>
-</head>
-<body>
-<h2>Take Quiz</h2>
-
-<form method="post">
-    {% csrf_token %}
-
-    {% for question in questions %}
-    <div>
-        <p><strong>Q{{ forloop.counter }}: {{ question.text }}</strong></p>
-
-        {% if question.question_type == 'mc' %}
-        {% for option in question.options %}
-        <label>
-            <input type="radio" name="question_{{ question.id }}" value="{{ option }}"> {{ option }}
-        </label><br>
+            {% else %}
+            <p class="text-muted">Unsupported question type or data is missing.</p>
+            {% endif %}
+        </div>
         {% endfor %}
 
-        {% elif question.question_type == 'tf' %}
-        <label><input type="radio" name="question_{{ question.id }}" value="True"> True</label><br>
-        <label><input type="radio" name="question_{{ question.id }}" value="False"> False</label><br>
-
-        {% elif question.question_type == 'long' %}
-        <textarea name="question_{{ question.id }}" rows="4" cols="50"></textarea>
-
-        {% elif question.question_type == 'fib' or question.question_type == 'short' %}
-        <input type="text" name="question_{{ question.id }}">
-
-        {% else %}
-        <p class="text-muted">Unsupported question type or data is missing.</p>
-        {% endif %}
-    </div>
-    <hr>
-    {% endfor %}
-
-    <button type="submit">Submit Quiz</button>
-</form>
-</body>
-</html>
+        <button type="submit" class="submit-btn">Submit Quiz</button>
+    </form>
+</div>
+{% endblock %}
