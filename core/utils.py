@@ -378,3 +378,54 @@ def extract_handwriting_from_pdf(file):
         print(f"Error in handwriting PDF OCR: {e}")
         return ""
 
+def evaluate_and_explain_with_ai(question_text, correct_answer, user_answer):
+    from openai import OpenAI
+    import httpx, os, json, re
+
+    prompt = f"""
+    You are a strict quiz grader. A student answered a quiz question. Evaluate their answer based on meaning, not exact wording.
+
+    Question: {question_text}
+
+    Correct Answer: {correct_answer}
+
+    Student's Answer: {user_answer}
+
+    1. Is the student's answer correct? Accept phrased answers, small grammar/spelling issues, and slight incompleteness if the core meaning is there.
+    2. Respond ONLY in this exact JSON format (no extra text or code formatting):
+
+    {{
+      "correct": true,
+      "explanation": "The correct answer is ... because ...",
+      "mistake": "The student misunderstood ... (if applicable)"
+    }}
+    """
+
+    try:
+        cert_path = "C:/certificate/2023 techloq bundle certificate.crt"
+        http_client = httpx.Client(verify=cert_path) if os.path.exists(cert_path) else httpx.Client()
+        client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"), http_client=http_client)
+
+        response = client.chat.completions.create(
+            model="gpt-4o",
+            messages=[{"role": "user", "content": prompt}],
+            temperature=0.2,
+        )
+
+        result = response.choices[0].message.content.strip()
+
+        # Remove markdown backticks if GPT added them
+        result = re.sub(r"^```json|```$", "", result.strip(), flags=re.MULTILINE)
+
+        data = json.loads(result)
+
+        explanation = data.get("explanation", "")
+        if not data.get("correct"):
+            mistake = data.get("mistake", "")
+            explanation += f"\n🛑 Your mistake: {mistake}"
+
+        return data.get("correct", False), explanation
+
+    except Exception as e:
+        print(f"❌ AI grading failed: {e}")
+        return False, "There was a problem evaluating your answer."

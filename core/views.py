@@ -458,6 +458,7 @@ def generate_quiz_questions(text, qtypes):
     from openai import OpenAI, OpenAIError
     import httpx
     import os
+    import json
 
     prompt = f"""
     Based on the following study material, generate 5 questions of each of the following types: {', '.join(qtypes)}.
@@ -497,6 +498,11 @@ def generate_quiz_questions(text, qtypes):
 
         questions = json.loads(result)
         print("Parsed questions:", questions)
+
+        # ✅ Map "answer" to "correct_answer" if needed
+        for q in questions:
+            if 'answer' in q and 'correct_answer' not in q:
+                q['correct_answer'] = q.pop('answer')
 
         valid_questions = []
         for q in questions:
@@ -551,26 +557,32 @@ def take_quiz_view(request, quiz_id):
             user_answer = request.POST.get(f'question_{question.id}', None)
             if user_answer is not None:
                 user_answer = user_answer.strip()
-            # TODO: Adjust parsing for complex types (JSON, lists) as needed.
 
-            # Simple correctness check (expand logic per question_type)
             is_correct = False
-            if question.question_type in ['mc', 'tf', 'fib', 'short']:
-                # For JSONField answers, parse string user_answer to comparable format if needed
+            feedback = ""
+
+            if question.question_type in ['mc', 'tf', 'fib']:
                 correct = question.correct_answer
                 if isinstance(correct, list):
                     is_correct = user_answer in correct
                 else:
                     is_correct = (str(user_answer).strip().lower() == str(correct).strip().lower())
-            elif question.question_type == 'long':
-                # Optional: manual grading or AI grading
-                is_correct = False
+                feedback = question.explanation or ""
+
+            elif question.question_type in ['short', 'long']:
+                from .utils import evaluate_and_explain_with_ai  # import inline to avoid circular import
+                is_correct, feedback = evaluate_and_explain_with_ai(
+                    question_text=question.text,
+                    correct_answer=question.correct_answer,
+                    user_answer=user_answer
+                )
 
             UserAnswer.objects.create(
                 attempt=attempt,
                 question=question,
                 answer=user_answer,
-                is_correct=is_correct
+                is_correct=is_correct,
+                explanation=feedback
             )
 
             if is_correct:

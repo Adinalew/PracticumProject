@@ -96,6 +96,7 @@ class UserAnswer(models.Model):
     question = models.ForeignKey(Question, on_delete=models.CASCADE)
     answer = models.JSONField(null=True, blank=True)
     is_correct = models.BooleanField()
+    explanation = models.TextField(blank=True, null=True)  # ✅ NEW FIELD
 
 class StudyReview(models.Model):
     session = models.ForeignKey(StudySession, related_name='reviews', on_delete=models.CASCADE)
