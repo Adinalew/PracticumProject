@@ -1,86 +1,231 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
     <title>AI StudyHub</title>
     <style>
         body {
-            font-family: Arial, sans-serif;
             margin: 0;
             padding: 0;
-            background-color: #f4f4f9;
+            font-family: 'Segoe UI', sans-serif;
+            background: linear-gradient(to bottom right, #e9f5ff, #ffffff);
+            color: #333;
             display: flex;
             flex-direction: column;
             align-items: center;
             justify-content: center;
-            height: 100vh;
-            text-align: center;
-            animation: fadeIn 1s ease-in-out;
-        }
-
-        @keyframes fadeIn {
-            from { opacity: 0; transform: translateY(20px); }
-            to { opacity: 1; transform: translateY(0); }
+            min-height: 100vh;
+            overflow-x: hidden;
         }
 
         header {
-            margin-bottom: 2rem;
+            text-align: center;
+            margin-bottom: 2.5rem;
+            animation: popFade 1s ease forwards;
         }
 
         header h1 {
-            font-size: 2.5rem;
-            color: #4CAF50;
+            font-size: 3rem;
+            color: #007bff;
+            margin-bottom: 0.5rem;
         }
 
-        header p {
-            font-size: 1.2rem;
+        .typing-subtitle {
+            font-size: 1.25rem;
             color: #555;
+            border-right: 2px solid #555;
+            white-space: nowrap;
+            overflow: hidden;
+            width: 0;
+            animation: typing 3.5s steps(40, end) forwards, blink 0.75s step-end infinite;
+        }
+
+        @keyframes typing {
+            from { width: 0 }
+            to { width: 24ch }
+        }
+
+        @keyframes blink {
+            0%, 100% { border-color: transparent }
+            50% { border-color: #555 }
+        }
+
+        @keyframes popFade {
+            from { opacity: 0; transform: translateY(30px); }
+            to { opacity: 1; transform: translateY(0); }
         }
 
         .login-button {
-            padding: 0.8rem 1.5rem;
-            font-size: 1rem;
-            color: white;
+            padding: 12px 28px;
+            font-size: 1.1rem;
             background-color: #4CAF50;
+            color: white;
             border: none;
-            border-radius: 5px;
-            cursor: pointer;
+            border-radius: 8px;
             text-decoration: none;
-            transition: background-color 0.3s ease;
+            cursor: pointer;
+            transition: background-color 0.3s ease, transform 0.2s ease;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+            animation: popFade 1.2s ease 0.5s forwards;
+            opacity: 0;
         }
 
         .login-button:hover {
-            background-color: #45a049;
+            background-color: #3e8e41;
+            transform: translateY(-2px);
         }
 
         .graphics {
             margin-top: 2rem;
+            max-width: 90%;
+            animation: popFade 1s ease 1.3s forwards;
+            opacity: 0;
         }
 
         .graphics img {
-            max-width: 90%;
-            height: auto;
-            border-radius: 15px;
-            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.15);
+            width: 100%;
+            max-width: 600px;
+            border-radius: 20px;
+            box-shadow: 0 12px 30px rgba(0, 0, 0, 0.15);
             transition: transform 0.3s ease, box-shadow 0.3s ease;
         }
 
         .graphics img:hover {
-            transform: scale(1.03);
-            box-shadow: 0 15px 30px rgba(0, 0, 0, 0.25);
+            transform: scale(1.02);
+            box-shadow: 0 18px 40px rgba(0, 0, 0, 0.2);
+        }
+
+        /* Animation Section */
+        .animation-container {
+            margin-top: 4rem;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 30px;
+            opacity: 1;
+            transition: opacity 1s ease;
+        }
+
+        .animation-container.fade-out {
+            opacity: 0;
+        }
+
+        .step-img, .arrow {
+            opacity: 0;
+            transform: scale(0.5);
+            width: 100px;
+            height: auto;
+        }
+
+        .step-img.pop {
+            animation: popIn 0.5s ease-out forwards;
+        }
+
+        .arrow.show {
+            animation: arrowIn 0.5s ease-out forwards;
+        }
+
+        @keyframes popIn {
+            0% { opacity: 0; transform: scale(0.5); }
+            50% { opacity: 1; transform: scale(1.1); }
+            100% { transform: scale(1); }
+        }
+
+        @keyframes arrowIn {
+            0% { opacity: 0; transform: translateX(-10px); }
+            100% { opacity: 1; transform: translateX(0); }
+        }
+
+        @media (max-width: 600px) {
+            header h1 {
+                font-size: 2.2rem;
+            }
+
+            .typing-subtitle {
+                font-size: 1rem;
+            }
+
+            .login-button {
+                font-size: 1rem;
+                padding: 10px 20px;
+            }
+
+            .step-img, .arrow {
+                width: 80px;
+            }
         }
     </style>
 </head>
 <body>
 <header>
     <h1>Welcome to AI StudyHub</h1>
-    <p>Your AI-powered learning assistant</p>
+    <p class="typing-subtitle">Your smart study companion powered by AI</p>
 </header>
-<a href="/login" class="login-button">Log In</a>
-<div class="graphics">
-<!--    <img src="https://images.unsplash.com/photo-1600195077075-d99c443e456e?ixlib=rb-4.0.3&auto=format&fit=crop&w=1200&q=80"-->
-<!--         alt="Student with laptop" />-->
+
+<a href="/login" class="login-button">🚀 Get Started</a>
+
+
+<!-- 👇 Animation Sequence Starts Here -->
+<div class="animation-container" id="animationSequence">
+    <img src="pic1.jpg" id="imgA" class="step-img" alt="Step 1">
+    <img src="arrow.gif" id="arrowAB" class="arrow" alt="Arrow A to B">
+    <img src="pic2.jpg" id="imgB" class="step-img" alt="Step 2">
+    <img src="arrow.gif" id="arrowBC" class="arrow" alt="Arrow B to C">
+    <img src="pic3.jpg" id="imgC" class="step-img" alt="Step 3">
 </div>
+
+<script>
+    function animateSequence() {
+        const container = document.getElementById('animationSequence');
+        const imgA = document.getElementById('imgA');
+        const arrowAB = document.getElementById('arrowAB');
+        const imgB = document.getElementById('imgB');
+        const arrowBC = document.getElementById('arrowBC');
+        const imgC = document.getElementById('imgC');
+
+        // Reset all
+        [imgA, arrowAB, imgB, arrowBC, imgC].forEach(el => {
+            el.classList.remove('pop', 'show');
+            el.style.opacity = 0;
+        });
+
+        container.classList.remove('fade-out');
+
+        // Animate each step
+        setTimeout(() => {
+            imgA.classList.add('pop');
+            imgA.style.opacity = 1;
+        }, 500);
+
+        setTimeout(() => {
+            arrowAB.classList.add('show');
+            arrowAB.style.opacity = 1;
+        }, 1500);
+
+        setTimeout(() => {
+            imgB.classList.add('pop');
+            imgB.style.opacity = 1;
+        }, 2000);
+
+        setTimeout(() => {
+            arrowBC.classList.add('show');
+            arrowBC.style.opacity = 1;
+        }, 3000);
+
+        setTimeout(() => {
+            imgC.classList.add('pop');
+            imgC.style.opacity = 1;
+        }, 3500);
+
+        // Fade everything out at the end
+        setTimeout(() => {
+            container.classList.add('fade-out');
+        }, 7000);
+    }
+
+    animateSequence();
+    setInterval(animateSequence, 8500);
+</script>
 </body>
 </html>

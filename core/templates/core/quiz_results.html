@@ -1,91 +1,80 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <title>Quiz Results</title>
-    <style>
-        body {
-            font-family: Arial, sans-serif;
-            background-color: #f9f9f9;
-            margin: 0;
-            padding: 20px;
-        }
+{% extends 'core/base.html' %}
+{% block content %}
+<style>
+    .quiz-results-container {
+        max-width: 800px;
+        margin: 40px auto;
+        padding: 30px;
+        background-color: #ffffff;
+        border-radius: 10px;
+        box-shadow: 0 6px 16px rgba(0, 0, 0, 0.08);
+        font-family: 'Segoe UI', sans-serif;
+    }
 
-        .container {
-            max-width: 1000px;
-            margin: 0 auto;
-            text-align: center;
-        }
+    .quiz-results-container h2 {
+        text-align: center;
+        font-size: 1.8rem;
+        margin-bottom: 25px;
+    }
 
-        h1 {
-            color: #333;
-            margin-bottom: 25px;
-        }
+    .qa-block {
+        background-color: #f8f9fa;
+        padding: 15px 20px;
+        border-left: 5px solid #007bff;
+        border-radius: 6px;
+        margin-bottom: 20px;
+    }
 
-        .form-section {
-            background-color: #fff;
-            padding: 20px;
-            border-radius: 8px;
-            margin-bottom: 20px;
-            text-align: left;
-            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-        }
+    .qa-block p {
+        margin: 6px 0;
+        font-size: 1rem;
+    }
 
-        .message {
-            background-color: #e6ffed;
-            color: #2e7d32;
-            padding: 12px 20px;
-            border: 1px solid #a5d6a7;
-            border-radius: 6px;
-            margin-bottom: 20px;
-            font-size: 18px;
-        }
+    .qa-block .correct {
+        color: green;
+        font-weight: bold;
+    }
 
-        .top-bar {
-            display: flex;
-            justify-content: center;
-            gap: 15px;
-            margin-top: 30px;
-        }
+    .qa-block .incorrect {
+        color: red;
+        font-weight: bold;
+    }
 
-        .back-btn, .toggle-btn {
-            padding: 10px 20px;
-            font-size: 15px;
-            border: none;
-            border-radius: 5px;
-            cursor: pointer;
-            text-decoration: none;
-            color: white;
-        }
+    .back-btn {
+        display: inline-block;
+        margin-top: 20px;
+        background-color: #007bff;
+        color: white;
+        padding: 10px 20px;
+        font-size: 1rem;
+        border-radius: 5px;
+        text-decoration: none;
+        text-align: center;
+    }
 
-        .back-btn {
-            background-color: #007bff;
-        }
+    .back-btn:hover {
+        background-color: #0056b3;
+    }
+</style>
 
-        .back-btn:hover {
-            background-color: #0056b3;
-        }
+<div class="quiz-results-container">
+    <h2>📝 Quiz Results (Score: {{ attempt.score|floatformat:1 }}%)</h2>
 
-        .toggle-btn {
-            background-color: #28a745;
-        }
+    {% for ua in user_answers %}
+    <div class="qa-block">
+        <p><strong>Q:</strong> {{ ua.question.text }}</p>
+        <p><strong>Your answer:</strong> {{ ua.answer }}</p>
+        <p><strong>Correct answer:</strong> {{ ua.question.correct_answer }}</p>
+        <p>
+            {% if ua.is_correct %}
+            <span class="correct">✔ Correct!</span>
+            {% else %}
+            <span class="incorrect">✘ Incorrect</span>
+            {% endif %}
+        </p>
+    </div>
+    {% endfor %}
 
-        .toggle-btn:hover {
-            background-color: #218838;
-        }
-    </style>
-</head>
-<body>
-<h2>Quiz Results (Score: {{ attempt.score }}%)</h2>
-
-{% for ua in user_answers %}
-<div>
-    <p><strong>Q: {{ ua.question.text }}</strong></p>
-    <p>Your answer: {{ ua.answer }}</p>
-    <p>Correct answer: {{ ua.question.correct_answer }}</p>
-    <p>{% if ua.is_correct %}Correct!{% else %}Incorrect.{% endif %}</p>
-{% endfor %}
-    <a href="{% url 'dashboard' %}" class="back-btn">Back to Dashboard</a>
+    <a href="{% url 'dashboard' %}" class="back-btn">⬅ Back to Dashboard</a>
 </div>
-</body>
-</html>
+{% endblock %}

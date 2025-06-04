@@ -1,42 +1,109 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <title>Quiz Options</title>
-</head>
-<body>
 {% extends 'core/base.html' %}
-
 {% block content %}
-<h2>🧪 Customize Your Quiz</h2>
+<style>
+    .quiz-options-container {
+        max-width: 800px;
+        margin: 40px auto;
+        padding: 30px;
+        background: #ffffff;
+        border-radius: 10px;
+        box-shadow: 0 6px 16px rgba(0, 0, 0, 0.08);
+        font-family: 'Segoe UI', sans-serif;
+    }
 
-<form method="post">
-    {% csrf_token %}
-    {{ form.qtypes.errors }}
-    {{ form.qtypes }}
-    <button type="submit">Generate Quiz</button>
-</form>
+    .quiz-options-container h2 {
+        text-align: center;
+        font-size: 1.8rem;
+        margin-bottom: 25px;
+    }
 
-<p><a href="{% url 'session_detail' session.id %}">⬅ Back to session</a></p>
+    .quiz-options-container form {
+        font-size: 1rem;
+        margin-bottom: 20px;
+    }
 
-{% if quiz %}
-<h3>Generated Quiz</h3>
-<ul>
-    {% for question in quiz.questions.all %}
-    <li>{{ question.text }}</li>
-    <ul>
-        {% for option in question.options.all %}
-        <li>{{ option.text }} {% if option.is_correct %} (Correct) {% endif %}</li>
-        {% endfor %}
-    </ul>
-    {% endfor %}
-</ul>
-{% endif %}
+    .quiz-options-container button {
+        background-color: #007bff;
+        color: white;
+        border: none;
+        padding: 10px 20px;
+        font-size: 1rem;
+        border-radius: 5px;
+        cursor: pointer;
+        margin-top: 10px;
+    }
 
-{% if error %}
-<p style="color: red;">{{ error }}</p>
-{% endif %}
+    .quiz-options-container button:hover {
+        background-color: #0056b3;
+    }
 
+    .quiz-options-container .back-link {
+        display: inline-block;
+        margin-top: 20px;
+        color: #4CAF50;
+        text-decoration: none;
+        font-weight: bold;
+    }
+
+    .quiz-error {
+        color: red;
+        font-weight: bold;
+        margin-bottom: 15px;
+    }
+
+    .generated-quiz {
+        margin-top: 30px;
+        padding: 20px;
+        background: #f9f9f9;
+        border-left: 5px solid #4CAF50;
+        border-radius: 6px;
+    }
+
+    .generated-quiz h3 {
+        margin-bottom: 15px;
+    }
+
+    .generated-quiz ul {
+        margin-bottom: 20px;
+        padding-left: 20px;
+    }
+
+    .generated-quiz li {
+        margin-bottom: 6px;
+    }
+</style>
+
+<div class="quiz-options-container">
+    <h2>🧪 Customize Your Quiz</h2>
+
+    {% if error %}
+    <p class="quiz-error">{{ error }}</p>
+    {% endif %}
+
+    <form method="post">
+        {% csrf_token %}
+        {{ form.qtypes.errors }}
+        {{ form.qtypes }}
+        <button type="submit">Generate Quiz</button>
+    </form>
+
+    <a href="{% url 'session_detail' session.id %}" class="back-link">⬅ Back to Session</a>
+
+    {% if quiz %}
+    <div class="generated-quiz">
+        <h3>📝 Generated Quiz</h3>
+        <ul>
+            {% for question in quiz.questions.all %}
+            <li><strong>{{ question.text }}</strong>
+                <ul>
+                    {% for option in question.options.all %}
+                    <li>{{ option.text }} {% if option.is_correct %}<span style="color: green;">(Correct)</span>{% endif %}</li>
+                    {% endfor %}
+                </ul>
+            </li>
+            {% endfor %}
+        </ul>
+    </div>
+    {% endif %}
+</div>
 {% endblock %}
-</body>
-</html>
