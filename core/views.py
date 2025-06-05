@@ -18,6 +18,8 @@ from .utils import (extract_text_from_uploaded_file, extract_text_from_file, ext
                     extract_handwriting_from_pdf)
 from .utils import clean_ocr_text_with_ai
 from django.views.decorators.http import require_GET
+import markdown  # ✅ make sure this is imported at the top
+from django.utils.safestring import mark_safe  # ✅ for safe HTML rendering
 
 QUESTION_TYPE_KEYS = {'mc', 'tf', 'long', 'fib', 'short'}
 
@@ -680,12 +682,17 @@ def view_review(request, review_id):
     else:
         form = FollowUpForm()
 
+    # ✅ Convert Markdown to HTML
+    rendered_html = mark_safe(markdown.markdown(review.content))
+
     return render(request, 'core/view_review.html', {
         'review': review,
+        'review_html': rendered_html,  # pass the rendered HTML version
         'session': session,
         'form': form,
         'followups': followups,
     })
+
 
 @login_required
 def session_reviews(request, session_id):

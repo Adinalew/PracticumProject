@@ -88,8 +88,9 @@
     <div class="review-type">{{ review.type|default:"Review" }}</div>
     <div class="review-date">Created: {{ review.created_at|date:"F j, Y, g:i a" }}</div>
   </div>
-
   <div class="review-content">
+    {{ review_html }}
+  </div>
     {{ review.content|linebreaks }}
   </div>
 
