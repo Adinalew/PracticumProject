@@ -1,0 +1,51 @@
+[33m62f12c0[m[33m ([m[1;36mHEAD[m[33m -> [m[1;32mmaster[m[33m)[m HEAD@{0}: commit: removed all local_trocr files from tracking
+[33m5bfcb10[m HEAD@{1}: commit: removed giant file from tracking
+[33m43d727f[m HEAD@{2}: commit: cleaned up session review
+[33mf8ff8f9[m[33m ([m[1;31morigin/master[m[33m, [m[1;31morigin/HEAD[m[33m)[m HEAD@{3}: commit: added a cleaned version of extracted notes. and cleaned up css
+[33mb2584c5[m HEAD@{4}: commit: now AI marks the quizzes, so answers can be in different wording than correct answer
+[33maaa067a[m HEAD@{5}: commit: fixed styles of quiz
+[33md00e9cd[m HEAD@{6}: commit: moved images to a static folder
+[33ma8e58bb[m HEAD@{7}: pull: Fast-forward
+[33m589b526[m HEAD@{8}: commit: worked on styling
+[33me3f65f8[m HEAD@{9}: pull: Fast-forward
+[33me3d2ca8[m HEAD@{10}: checkout: moving from b91e6203637819cc0c9fbebfd77715fcd59252c5 to master
+[33mb91e620[m[33m ([m[1;32mhandwriting-ocr[m[33m)[m HEAD@{11}: checkout: moving from master to b91e620
+[33me3d2ca8[m HEAD@{12}: commit: tried implementing hugging face models that can read messy handwriting for OCR. techloq blocked it for me but hopefully will work for everyone else
+[33m0055ab6[m HEAD@{13}: commit (merge): Resolved merge conflict in views.py
+[33m8520466[m HEAD@{14}: pull origin master: Fast-forward
+[33m9a2a630[m HEAD@{15}: checkout: moving from handwriting-ocr to master
+[33mb91e620[m[33m ([m[1;32mhandwriting-ocr[m[33m)[m HEAD@{16}: commit: added OCR feature which can read handwriting- but only if it's clear
+[33m9a2a630[m HEAD@{17}: checkout: moving from master to handwriting-ocr
+[33m9a2a630[m HEAD@{18}: commit: got rid of button text to speech bec it is now on each note individually
+[33m8d2ca0e[m[33m ([m[1;32mai-voice[m[33m)[m HEAD@{19}: merge ai-voice: Fast-forward
+[33m62c0a16[m HEAD@{20}: checkout: moving from ai-voice to master
+[33m8d2ca0e[m[33m ([m[1;32mai-voice[m[33m)[m HEAD@{21}: commit: used AI text to speech instead of google text to speech
+[33m62c0a16[m HEAD@{22}: checkout: moving from master to ai-voice
+[33m62c0a16[m HEAD@{23}: commit: updated so that you can edit the title in session and by dashboard
+[33mbb68bf1[m HEAD@{24}: commit: made messages disapear after 2 seconds
+[33m737a0bb[m HEAD@{25}: commit: fixed error that irrelevant message abt session deletion shows up in flashcards
+[33m6231d61[m HEAD@{26}: commit: added flashcardset model, and made a list of flashcard versions u made in that session come up in session detail page. they are clickable, and will lead you to your flashcard set
+[33m2f94457[m HEAD@{27}: commit: added option to customise flashcards with a prompt
+[33m4991017[m HEAD@{28}: commit: implemented the flashcards feature
+[33md16082b[m HEAD@{29}: commit: updated so that all previous reveiws show up in the session_details page
+[33m7804a59[m HEAD@{30}: commit: fixed issue with review generating the same review from a different session every time, added a follow up question option
+[33m8f85e5d[m HEAD@{31}: pull: Fast-forward
+[33m1e6d085[m HEAD@{32}: pull: Merge made by the 'ort' strategy.
+[33m0c328a6[m HEAD@{33}: commit: fixed the AI API!!! whoohooo
+[33m09a99e2[m HEAD@{34}: commit: designed the register and login pages
+[33ma31fc0f[m HEAD@{35}: commit: worked on the design/css, uploading multiple files, and gui, and flashcards, and connecting to ai api
+[33m3fb2179[m HEAD@{36}: commit: added ai feature- i think it works, but techlow blocked when i tried to connect to it
+[33m7c0dfd0[m HEAD@{37}: commit: added api key, and fixed issues with text extraction with non-image files
+[33med616f4[m HEAD@{38}: pull: Fast-forward
+[33md5b54b6[m HEAD@{39}: commit: fixed upload more notes page
+[33mc02825c[m HEAD@{40}: checkout: moving from master to master
+[33mc02825c[m HEAD@{41}: checkout: moving from master to master
+[33mc02825c[m HEAD@{42}: pull: Fast-forward
+[33mf50780e[m HEAD@{43}: checkout: moving from openAI-API to master
+[33mac85829[m[33m ([m[1;31morigin/openAI-API[m[33m, [m[1;32mopenAI-API[m[33m)[m HEAD@{44}: checkout: moving from master to openAI-API
+[33mf50780e[m HEAD@{45}: checkout: moving from openAI-API to master
+[33mac85829[m[33m ([m[1;31morigin/openAI-API[m[33m, [m[1;32mopenAI-API[m[33m)[m HEAD@{46}: commit: tried to fix uploading error by addidng session parameter
+[33mee96586[m HEAD@{47}: pull: Fast-forward
+[33mc9f5d8f[m HEAD@{48}: commit: fixed up session details.html, views and paths
+[33mf50780e[m HEAD@{49}: checkout: moving from master to openAI-API
+[33mf50780e[m HEAD@{50}: clone: from https://github.com/Adinalew/PracticumProject.git
