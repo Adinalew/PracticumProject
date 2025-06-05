@@ -12,7 +12,6 @@ urlpatterns = [
     path('register/', views.register_view, name='register'),
     path('dashboard/', views.dashboard_view, name='dashboard'),
     path('logout/', views.logout_view, name='logout'),
-
     path('start-session/', views.start_session_view, name='start_session'),
     path('session/<int:session_id>/upload/', views.upload_files_to_session, name='upload_files_to_session'),
     path('session/<int:session_id>/flashcards/', generate_flashcards, name='generate_flashcards'),
@@ -38,6 +37,7 @@ urlpatterns = [
     path('clean-note/<int:note_id>/', views.clean_note_view, name='clean_note'),
     path('revert-note/<int:note_id>/', views.revert_note_view, name='revert_note'),
     path('get_or_generate_cleaned_note/<int:note_id>/', views.get_or_generate_cleaned_note, name='get_or_generate_cleaned_note'),
+    path('session/<int:session_id>/', views.session_detail, name='session_detail'),
 ]
 
 if settings.DEBUG:

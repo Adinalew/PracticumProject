@@ -649,9 +649,13 @@ def quiz_results_view(request, attempt_id):
     attempt = get_object_or_404(QuizAttempt, id=attempt_id, user=request.user)
     user_answers = UserAnswer.objects.filter(attempt=attempt).select_related('question')
 
+    # Get the session from the related quiz
+    session = attempt.quiz.session
+
     return render(request, 'core/quiz_results.html', {
         'attempt': attempt,
         'user_answers': user_answers,
+        'session': session,
     })
 
 @login_required

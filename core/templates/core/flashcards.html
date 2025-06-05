@@ -226,7 +226,7 @@
     {% if flashcards %}
     <div class="top-bar">
         <button class="toggle-btn" onclick="toggleView()">Switch to Single View</button>
-        <a href="{% url 'dashboard' %}" class="back-btn">Back to Dashboard</a>
+        <a href="{% url 'session_detail' session.id %}" class="back-btn">⬅ Back to Session</a>
     </div>
 
     <div id="gridView" class="flashcards-grid">
