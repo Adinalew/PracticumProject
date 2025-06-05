@@ -20,7 +20,7 @@ from pdf2image import convert_from_bytes
 from transformers import TrOCRProcessor, VisionEncoderDecoderModel
 import torch
 from PIL import Image
-
+from .models import ExtractedNote
 # load the processor and model just once (at module level)
 #processor = TrOCRProcessor.from_pretrained("microsoft/trocr-base-handwritten")
 #model = VisionEncoderDecoderModel.from_pretrained("microsoft/trocr-base-handwritten")
@@ -34,8 +34,8 @@ import json
 load_dotenv()
 
 def get_trocr_model():
-    processor = TrOCRProcessor.from_pretrained("microsoft/trocr-base-handwritten")
-    model = VisionEncoderDecoderModel.from_pretrained("microsoft/trocr-base-handwritten")
+    processor = TrOCRProcessor.from_pretrained("core/local_trocr")
+    model = VisionEncoderDecoderModel.from_pretrained("core/local_trocr")
     return processor, model
 
 def extract_handwriting_from_image_with_trocr(file_field):
@@ -87,18 +87,38 @@ def extract_text_from_image(file_field):
 
 
 
-
 def extract_text_from_pdf(file):
-    file.seek(0)
     try:
-        doc = fitz.open(stream=file.read(), filetype="pdf")
-        text = ""
-        for page in doc:
-            page_text = page.get_text()
-            text += page_text + "\n"
-        return text.strip()
+        from pdf2image import convert_from_bytes
+        from PIL import Image, ImageEnhance, ImageFilter
+        import pytesseract
+
+        print("📄 Converting PDF to images...")
+        file.seek(0)
+        images = convert_from_bytes(file.read())
+
+        if not images:
+            print("❌ No images generated from PDF.")
+            return ""
+
+        all_text = ""
+        for i, img in enumerate(images):
+            print(f"🔍 Running Tesseract on page {i+1}...")
+
+            # Preprocess image
+            img = img.convert("L")  # grayscale
+            img = img.filter(ImageFilter.MedianFilter())
+            enhancer = ImageEnhance.Contrast(img)
+            img = enhancer.enhance(2)  # increase contrast
+
+            text = pytesseract.image_to_string(img)
+            print("📄 Tesseract output from page:", repr(text))
+            all_text += text.strip() + "\n"
+
+        return all_text.strip()
+
     except Exception as e:
-        print(f"Error extracting PDF text: {e}")
+        print(f"❌ OCR failed: {e}")
         return ""
 
 def extract_text_from_docx(file):
@@ -117,6 +137,75 @@ def extract_text_from_pptx(file):
                     full_text.append(paragraph.text)
     return "\n".join(full_text).strip()
 
+def extract_text_from_uploaded_file(uploaded_file):
+    file_field = uploaded_file.file
+    ext = os.path.splitext(file_field.name)[1].lower()
+    print(f"📂 Received file: {file_field.name} (ext={ext})")
+
+    try:
+        if ext in ['.png', '.jpg', '.jpeg', '.bmp', '.tiff']:
+            print("🧠 Routing to extract_text_from_image()")
+            return extract_text_from_image(file_field)
+
+        elif ext == '.txt':
+            print("📄 Reading .txt file...")
+            file_field.open()
+            content_bytes = file_field.read()
+            return content_bytes.decode('utf-8', errors='ignore').strip()
+
+        elif ext == '.pdf':
+            print("📄 Routing to extract_text_from_pdf()")
+
+            file_field.seek(0)
+            text = extract_text_from_pdf(file_field)
+
+            if text.strip():
+                print("✅ PDF had extractable text.")
+                return text
+            else:
+                print("⚠️ PDF text empty. Trying handwriting OCR fallback with Hugging Face...")
+
+                try:
+                    file_field.seek(0)
+                    images = convert_from_bytes(file_field.read())
+                    ocr_text = ""
+
+                    processor, model = get_trocr_model()
+
+                    for img in images:
+                        img_byte_arr = io.BytesIO()
+                        img.save(img_byte_arr, format='JPEG')
+                        img_bytes = img_byte_arr.getvalue()
+
+                        image = Image.open(io.BytesIO(img_bytes)).convert("RGB")
+                        pixel_values = processor(images=image, return_tensors="pt").pixel_values
+                        generated_ids = model.generate(pixel_values)
+                        text_piece = processor.batch_decode(generated_ids, skip_special_tokens=True)[0]
+                        print(f"📝 TrOCR text from page: {repr(text_piece)}")
+                        ocr_text += text_piece + "\n"
+
+                    return ocr_text.strip()
+
+                except Exception as e:
+                    print(f"❌ TrOCR fallback for PDF failed: {e}")
+                    return ""
+
+        elif ext == '.docx':
+            print("📄 Routing to extract_text_from_docx()")
+            return extract_text_from_docx(file_field)
+
+        elif ext == '.pptx':
+            print("📄 Routing to extract_text_from_pptx()")
+            return extract_text_from_pptx(file_field)
+
+        else:
+            print("⚠️ Unknown file type")
+            return ""
+
+    except Exception as e:
+        print(f"❌ Error in extract_text_from_uploaded_file: {e}")
+        return ""
+
 def extract_text_from_file(file):
     ext = os.path.splitext(file.name)[1].lower()
     if ext in ['.png', '.jpg', '.jpeg', '.bmp', '.tiff']:
@@ -129,7 +218,6 @@ def extract_text_from_file(file):
         return extract_text_from_pptx(file)
     else:
         return ""
-
 
 def extract_handwriting_from_image(image_file):
     try:
@@ -184,11 +272,29 @@ def extract_text_from_uploaded_file(uploaded_file):
         return ""
 
 def generate_tts_audio(text):
-    tts = gTTS(text)
-    audio_stream = BytesIO()
-    tts.write_to_fp(audio_stream)
-    audio_stream.seek(0)
-    return audio_stream.read()
+    from openai import OpenAI
+    import httpx
+    import os
+
+    api_key = os.getenv("OPENAI_API_KEY")
+    cert_path = "C:/certificate/2023 techloq bundle certificate.crt"
+
+    http_client = httpx.Client(verify=cert_path) if os.path.exists(cert_path) else httpx.Client()
+    client = OpenAI(api_key=api_key, http_client=http_client)
+
+    try:
+        response = client.audio.speech.create(
+            model="tts-1",
+            voice="shimmer",  # options: alloy, echo, fable, onyx, nova, shimmer
+            input=text[:4096]  # max character limit
+        )
+
+        return response.content  # ready-to-play MP3 binary
+
+    except Exception as e:
+        print(f"❌ OpenAI TTS failed: {e}")
+        raise
+
 
 def get_text_from_session(session):
     notes = session.extracted_notes.all()
@@ -349,7 +455,7 @@ def generate_note_audio(note):
         response = client.audio.speech.create(
             model="tts-1",  # Or use "tts-1-hd" if allowed
             voice="shimmer",  # options: alloy, echo, fable, onyx, nova, shimmer
-            input=note.text[:4096]  # OpenAI TTS limit per request
+            input=(note.cleaned_text or note.original_text)[:4096]
         )
 
         mp3_data = response.content
@@ -429,3 +535,32 @@ def evaluate_and_explain_with_ai(question_text, correct_answer, user_answer):
     except Exception as e:
         print(f"❌ AI grading failed: {e}")
         return False, "There was a problem evaluating your answer."
+
+def clean_ocr_text_with_ai(original_text):
+    api_key = os.getenv("OPENAI_API_KEY")
+    cert_path = "C:/certificate/2023 techloq bundle certificate.crt"
+
+    if os.path.exists(cert_path):
+        http_client = httpx.Client(verify=cert_path)
+    else:
+        http_client = httpx.Client()
+
+    client = OpenAI(api_key=api_key, http_client=http_client)
+
+    prompt = (
+        "You are an assistant that cleans up messy OCR text and makes it more readable and coherent.Try to stay as true to the original version as possible.\n\n"
+        f"Please clean up the following OCR text:\n\n{original_text}"
+    )
+
+    try:
+        response = client.chat.completions.create(
+            model="gpt-4o",
+            messages=[
+                {"role": "system", "content": "You are a helpful assistant."},
+                {"role": "user", "content": prompt}
+            ]
+        )
+        return response.choices[0].message.content.strip()
+    except OpenAIError as e:
+        print(f"❌ OpenAI OCR clean error: {e}")
+        return "There was a problem cleaning the OCR text."

@@ -35,6 +35,9 @@ urlpatterns = [
     path('quiz/<int:quiz_id>/take/', views.take_quiz_view, name='take_quiz'),
     path('quiz/<int:quiz_id>/delete/', views.delete_quiz, name='delete_quiz'),
     path('flashcard_set/<int:flashcard_set_id>/delete/', views.delete_flashcard_set, name='delete_flashcard_set'),
+    path('clean-note/<int:note_id>/', views.clean_note_view, name='clean_note'),
+    path('revert-note/<int:note_id>/', views.revert_note_view, name='revert_note'),
+    path('get_or_generate_cleaned_note/<int:note_id>/', views.get_or_generate_cleaned_note, name='get_or_generate_cleaned_note'),
 ]
 
 if settings.DEBUG:

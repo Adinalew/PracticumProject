@@ -46,13 +46,14 @@ class Quiz(models.Model):
         return f"{self.user[:50]}..."
 
 class ExtractedNote(models.Model):
-    session = models.ForeignKey(StudySession, related_name='extracted_notes', on_delete=models.CASCADE)
-    file = models.ForeignKey('UploadedFile', null=True, blank=True, on_delete=models.SET_NULL, related_name='notes')
-    text = models.TextField()
+    session = models.ForeignKey(StudySession, on_delete=models.CASCADE, related_name='extracted_notes')
+    uploaded_file = models.ForeignKey('UploadedFile', on_delete=models.CASCADE, null=True, blank=True)
+    original_text = models.TextField(blank=True, default="")
+    cleaned_text = models.TextField(blank=True, default="")
     created_at = models.DateTimeField(auto_now_add=True)
 
     def __str__(self):
-        return self.text[:50] or "<empty>"
+        return self.original_text[:50] or "<empty>"
 
 class TextToSpeechAudio(models.Model):
     session = models.OneToOneField(StudySession, on_delete=models.CASCADE, related_name='tts_audio')

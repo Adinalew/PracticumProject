@@ -16,6 +16,9 @@ from .utils import (extract_text_from_uploaded_file, extract_text_from_file, ext
                     extract_text_from_pdf, generate_flashcards_from_text, generate_study_review,
                     generate_followup_response, generate_tts_audio, get_text_from_session, generate_note_audio,
                     extract_handwriting_from_pdf)
+from .utils import clean_ocr_text_with_ai
+from django.views.decorators.http import require_GET
+
 QUESTION_TYPE_KEYS = {'mc', 'tf', 'long', 'fib', 'short'}
 
 # ✨ New form for customizing the AI-generated review
@@ -97,7 +100,11 @@ def start_session_view(request):
                     print("🧠 OCR from view:", repr(extracted_text))  #
 
                     if extracted_text.strip():
-                        ExtractedNote.objects.create(session=session, text=extracted_text, file=uploaded_file)
+                        ExtractedNote.objects.create(
+                            session=session,
+                            uploaded_file=uploaded_file,  # <-- this line is critical!
+                            original_text= extracted_text
+                        )
 
                 return redirect('session_detail', session_id=session.id)
 
@@ -120,7 +127,7 @@ def debug_extracted_notes(request, session_id):
         print(f"No ExtractedNote objects found for session ID: {session_id}")
     else:
         for note in notes:
-            print(f"- Note ID: {note.id}, Text Preview: {note.text[:100]}")
+            print(f"- Note ID: {note.id}, Text Preview: {note.original_text[:100]}")
 
     return HttpResponse("Debugging complete. Check the server logs for details.")
 
@@ -150,7 +157,12 @@ def upload_files_to_session(request, session_id):
                         extracted_text = extract_text_from_uploaded_file(uploaded_file)
 
                     if extracted_text.strip():
-                        ExtractedNote.objects.create(session=session, text=extracted_text, file=uploaded_file)
+                        ExtractedNote.objects.create(
+                            session=session,
+                            uploaded_file=uploaded_file,  # <-- this line is critical!
+                            original_text=extracted_text
+                        )
+
         else:
             messages.error(request, "Error in file upload form.")
 
@@ -181,17 +193,17 @@ def session_detail(request, session_id):
         elif action == 'review':
             return redirect('customize_review', session_id=session.id)
 
-    notes = session.extracted_notes.all()
     uploaded_files = session.uploaded_files.all()
+    notes = ExtractedNote.objects.filter(session=session)
     flashcard_sets = session.flashcard_sets.all().order_by('-created_at')
-    quizzes = Quiz.objects.filter(session=session, user=request.user).order_by('-score')  # Highest score first
+    quizzes = Quiz.objects.filter(session=session, user=request.user).order_by('-score')
     summaries = session.summaries.all().order_by('-created_at')
     reviews = session.reviews.all().order_by('-created_at')
 
     return render(request, 'core/session_detail.html', {
         'session': session,
-        'notes': notes,
         'uploaded_files': uploaded_files,
+        'notes': notes,
         'flashcard_sets': flashcard_sets,
         'quizzes': quizzes,
         'summaries': summaries,
@@ -255,8 +267,9 @@ def generate_flashcards(request, session_id):
 
             combined_text = ""
             for uploaded_file in session.uploaded_files.all():
-                for note in uploaded_file.notes.all():
-                    combined_text += note.text + "\n"
+                notes = ExtractedNote.objects.filter(uploaded_file=uploaded_file)
+                for note in notes:
+                    combined_text += note.original_text + "\n"
 
             try:
                 card_pairs = generate_flashcards_from_text(combined_text, custom_prompt)
@@ -300,7 +313,7 @@ def flashcard_set_detail(request, session_id, set_name):
 def text_to_speech(request, session_id):
     session = get_object_or_404(StudySession, id=session_id, user=request.user)
     notes = session.extracted_notes.all()
-    text = " ".join(note.text for note in notes if note.text)
+    text = " ".join(note.cleaned_text or note.original_text for note in notes if note.cleaned_text or note.original_text)
 
     if not text.strip():
         return HttpResponse("No notes available to read aloud.")
@@ -404,7 +417,7 @@ def debug_extracted_notes(request, session_id):
         print(f"No ExtractedNote objects found for session ID: {session_id}")
     else:
         for note in notes:
-            print(f"- Note ID: {note.id}, Text Preview: {note.text[:100]}")
+            print(f"- Note ID: {note.id}, Text Preview: {note.original_text[:100]}")
 
     return HttpResponse("Debugging complete. Check the server logs for details.")
 
@@ -535,7 +548,7 @@ def get_combined_session_text(session):
     if extracted_notes.exists():
         for note in extracted_notes:
             print("Notes were extracted")
-            texts.append(note.text)
+            texts.append(note.cleaned_text or note.original_text or '')
     else:
         print("No extracted notes found for this session.")
 
@@ -686,17 +699,13 @@ def session_reviews(request, session_id):
 
 @login_required
 def note_audio_view(request, note_id):
-    """
-    Returns MP3 audio for a given ExtractedNote.
-    If audio doesn't exist, generate it using AI voice.
-    """
     note = get_object_or_404(ExtractedNote, id=note_id, session__user=request.user)
 
-    # If audio already exists, serve it
+    # ✅ Serve existing if already generated
     if hasattr(note, 'audio') and note.audio.audio_file:
         return redirect(note.audio.audio_file.url)
 
-    # Otherwise, generate it
+    # ✅ Otherwise, generate it
     audio_obj = generate_note_audio(note)
     if audio_obj:
         return redirect(audio_obj.audio_file.url)
@@ -720,3 +729,56 @@ def delete_quiz(request, quiz_id):
     quiz = get_object_or_404(Quiz, id=quiz_id, session__user=request.user)
     quiz.delete()
     return redirect('session_detail', session_id=quiz.session_id)
+
+def clean_note_view(request, note_id):
+    note = get_object_or_404(ExtractedNote, id=note_id)
+
+    # Skip if already cleaned
+    if note.cleaned_text:
+        return redirect('session_detail', session_id=note.session.id)
+
+    # Use AI to clean it
+    cleaned = clean_ocr_text_with_ai(note.original_text)
+    note.cleaned_text = cleaned
+    note.save()
+
+    return redirect('session_detail', session_id=note.session.id)
+
+@login_required
+def revert_note_view(request, note_id):
+    note = get_object_or_404(ExtractedNote, id=note_id)
+
+    note.cleaned_text = ""
+    note.save()
+
+    return redirect('session_detail', session_id=note.session.id)
+
+@require_GET
+@login_required
+def get_or_generate_cleaned_note(request, note_id):
+    try:
+        note = ExtractedNote.objects.get(id=note_id, session__user=request.user)
+
+        if not note.cleaned_text:
+            note.cleaned_text = clean_ocr_text_with_ai(note.original_text)  # ✅ Corrected usage
+            note.save()
+
+        return JsonResponse({'cleaned_text': note.cleaned_text})
+
+    except ExtractedNote.DoesNotExist:
+        return JsonResponse({'error': 'Note not found'}, status=404)
+    except Exception as e:
+        return JsonResponse({'error': str(e)}, status=500)
+
+@require_GET
+@login_required
+def get_or_generate_cleaned_note(request, note_id):
+    note = get_object_or_404(ExtractedNote, id=note_id, session__user=request.user)
+
+    if note.cleaned_text:
+        return JsonResponse({'cleaned_text': note.cleaned_text})
+    else:
+        cleaned = clean_ocr_text_with_ai(note.original_text)
+        note.cleaned_text = cleaned
+        note.save()
+        return JsonResponse({'cleaned_text': cleaned})
